@@ -1,0 +1,823 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BookingAppointment",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://{{base_url}}user"
+    },
+    {
+      "url": "http://{{base_url}}clinic"
+    },
+    {
+      "url": "http://{{base_url}}specialty"
+    },
+    {
+      "url": "http://{{base_url}}schedule"
+    },
+    {
+      "url": "http://{{base_url}}booking"
+    },
+    {
+      "url": "http://{{base_url}}doctor"
+    }
+  ],
+  "tags": [
+    {
+      "name": "User"
+    },
+    {
+      "name": "Clinic"
+    },
+    {
+      "name": "Specialty"
+    },
+    {
+      "name": "Schedule"
+    },
+    {
+      "name": "Booking"
+    },
+    {
+      "name": "Doctor"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Admin-User"
+    },
+    {
+      "name": "Admin-Clinic"
+    },
+    {
+      "name": "Admin-Specialty"
+    }
+  ],
+  "paths": {
+    "/count-patient": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Count Patient",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/65098f8570762eefba978e24": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Get User",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/current": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Get Current User",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["User"],
+        "summary": "Update Current User",
+        "requestBody": {
+          "content": {}
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/refreshtoken": {
+      "post": {
+        "tags": ["User"],
+        "summary": "RefreshAccessToken",
+        "requestBody": {
+          "content": {}
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/123": {
+      "get": {
+        "tags": ["Clinic"],
+        "summary": "Get Clinic",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Doctor"],
+        "summary": "Delete Doctor (Admin, Host)",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Booking"],
+        "summary": "Update Booking",
+        "requestBody": {
+          "content": {}
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/count": {
+      "get": {
+        "tags": ["Doctor"],
+        "summary": "Count Doctor",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": ["Admin-User"],
+        "summary": "Get Users",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin-Specialty"],
+        "summary": "Add Specialty",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Phổi"
+                  },
+                  "clinicID": {
+                    "type": "string",
+                    "example": "650a68a114f66aae39af0f6c"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/host/1111": {
+      "put": {
+        "tags": ["Clinic"],
+        "summary": "Update Clinic By Host",
+        "requestBody": {
+          "content": {}
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/1111": {
+      "get": {
+        "tags": ["Specialty"],
+        "summary": "Get Specialty",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/65069ed09afb60ae9b404924": {
+      "delete": {
+        "tags": ["Schedule"],
+        "summary": "Delete Schedule (Host, Admin)",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/65069280c28cee2da4dbde6d": {
+      "put": {
+        "tags": ["Schedule"],
+        "summary": "Update Schedule (Host, Admin)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "doctorID": "6503d383efca1bd374ab9fc1",
+                  "cost": 500,
+                  "date": "2021-12-14T22:13:20.000Z",
+                  "timeType": [
+                    {
+                      "time": "1",
+                      "maxNumber": "3"
+                    },
+                    {
+                      "time": "3",
+                      "maxNumber": "3"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Schedule"],
+        "summary": "Get Schedule",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/doctor": {
+      "get": {
+        "tags": ["Schedule"],
+        "summary": "Get Schedule By Doctor",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/patient/": {
+      "post": {
+        "tags": ["Booking"],
+        "summary": "Add Booking By Patient",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "scheduleID": "650a74140140c1009bec7e19",
+                  "time": "1"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Booking"],
+        "summary": "Get Booking By Patient",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/650a6c7aa155729fbadbb8c5": {
+      "put": {
+        "tags": ["Doctor"],
+        "summary": "Update Doctor (Admin, Host)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "specialtyID": "650a68d614f66aae39af0f74",
+                  "description": "Bác sĩ này.....",
+                  "roomID": "650a6b01a155729fbadbb874"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/12333": {
+      "get": {
+        "tags": ["Doctor"],
+        "summary": "Get Doctor",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "requestBody": {
+          "content": {}
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "fullName": "Huan Ngo",
+                  "email": "huanngo@gmail.com",
+                  "password": "123456",
+                  "mobile": "0909090013"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/650c2f766925cdd541e1dab3": {
+      "put": {
+        "tags": ["Admin-User"],
+        "summary": "Update User",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "integer",
+                    "example": "123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin-User"],
+        "summary": "Delete User",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/65044f9158c27a39c55c41ec": {
+      "put": {
+        "tags": ["Admin-Clinic"],
+        "summary": "Update Clinic",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "example": "https://ibaohiem.vn/wp-content/uploads/2023/04/Benh-vien-Y-duoc-TPHCM.jpg"
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "Bệnh viện Y "
+                  },
+                  "host": {
+                    "type": "integer",
+                    "example": "22982928292"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/65099bd8510a033297d30786": {
+      "delete": {
+        "tags": ["Admin-Clinic"],
+        "summary": "Delete Clinic",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/64ff32f21defe122b3d1a4a3": {
+      "put": {
+        "tags": ["Admin-Specialty"],
+        "summary": "Update Specialty",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "example": "https://umcclinic.com.vn/Data/Sites/1/News/80/slide_tm.jpg"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/64ff3074587ccbded2d418e6": {
+      "delete": {
+        "tags": ["Admin-Specialty"],
+        "summary": "Delete Specialty",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "integer"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "role": {
+            "type": "integer"
+          },
+          "address": {
+            "type": "string"
+          },
+          "isBlocked": { "type": "boolean" },
+          "refreshToken": {
+            "type": "string"
+          }
+        }
+      },
+      "Doctor": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "$ref": "#/components/schemas/User"
+          },
+          "specialtyID": {
+            "$ref": "#/components/schemas/Specialty"
+          },
+          "clinicID": {
+            "$ref": "#/components/schemas/Clinic"
+          },
+          "description": {
+            "type": "string"
+          },
+          "roomID": {
+            "type": "string"
+          }
+        }
+      },
+      "Specialty": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          }
+        }
+      },
+      "Clinic": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "items": {
+              "province": "string",
+              "district": "string",
+              "ward": "string",
+              "detail": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "specialtyID": {
+            "$ref": "#/components/schemas/Specialty"
+          },
+          "host": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "Schedule": {
+        "doctorID": {
+          "$ref": "#/components/schemas/Doctor"
+        },
+        "cost": {
+          "type": "string"
+        },
+        "date": "date",
+        "timeType": {
+          "type": "array",
+          "items": {
+            "time": {
+              "type": "string",
+              "enum": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13"
+              ]
+            },
+            "maxNumber": "integer"
+          }
+        }
+      },
+      "Booking": {
+        "patientID": {
+          "$ref": "#/components/schemas/Doctor"
+        },
+        "scheduleID": {
+          "$ref": "#/components/schemas/Schedule"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Đã hủy", "Đang xử lý", "Đã duyệt", "Thành công"]
+        },
+        "description": "string",
+        "time": "string"
+      }
+    }
+  }
+}
