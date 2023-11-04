@@ -6,6 +6,11 @@ const cors = require("cors");
 const dbConnect = require("./config/dbconnect");
 const initRoutes = require("./routes");
 
+//swagger
+const CSS_URL =
+  "https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css";
+const swaggerUi = require("swagger-ui-express");
+
 const port = process.env.PORT || 8888;
 
 const app = express();
@@ -21,6 +26,13 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.send("Server is running...");
 });
+
+const swaggerDoc = require("./swagger.json");
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDoc, { customCssUrl: CSS_URL })
+);
 
 //image
 app.use(express.json({ limit: "50mb" }));
