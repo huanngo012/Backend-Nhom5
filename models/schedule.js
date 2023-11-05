@@ -38,6 +38,10 @@ var scheduleSchema = new mongoose.Schema({
         type: Number,
         default: 3,
       },
+      full: {
+        type: Boolean,
+        default: false,
+      },
     },
   ],
 });

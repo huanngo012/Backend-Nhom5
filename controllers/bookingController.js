@@ -40,9 +40,21 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
     if (!alreadySchedule) {
       throw new Error("Lịch khám bệnh không tồn tại");
     }
-    const alreadyTime = alreadySchedule.timeType.find((el) => el.time === time);
+    const alreadyTime = alreadySchedule.timeType.find(
+      (el) => el.time === time && el.full !== true
+    );
     if (!alreadyTime) {
-      throw new Error("Thời gian khám bệnh trong ngày không tồn tại");
+      throw new Error(
+        "Thời gian khám bệnh trong ngày không tồn tại hoặc đã kín lịch"
+      );
+    }
+    const bookings = Booking.find({
+      scheduleID,
+      time,
+      status: { $ne: "Đã hủy" },
+    });
+    if (bookings.length >= alreadyTime.maxNumber) {
+      throw new Error("Đã kín giờ khám này");
     }
     const response = await Booking.create({
       patientID: _id,
@@ -61,6 +73,28 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
   }
 });
 
+const cancelBookingByPatient = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const booking = await Booking.findById(id);
+  if (booking.status !== "Đang xử lý") {
+    await Booking.findByIdAndUpdate(
+      id,
+      { status: "Đã hủy" },
+      {
+        new: true,
+      }
+    );
+    return res.status(200).json({
+      success: true,
+      message: `Hủy lịch khám thành công`,
+    });
+  }
+  return res.status(200).json({
+    success: false,
+    message: `Không thể hủy lịch khám do bác sĩ đã xác nhận!!! Vui lòng liên hệ lại với bác sĩ`,
+  });
+});
+
 //ADMIN
 const addBooking = asyncHandler(async (req, res) => {
   const { scheduleID, time, patientID } = req.body;
@@ -74,9 +108,21 @@ const addBooking = asyncHandler(async (req, res) => {
   if (!alreadySchedule) {
     throw new Error("Lịch khám bệnh không tồn tại");
   }
-  const alreadyTime = alreadySchedule.timeType.find((el) => el.time === time);
+  const alreadyTime = alreadySchedule.timeType.find(
+    (el) => el.time === time && el.full !== true
+  );
   if (!alreadyTime) {
-    throw new Error("Thời gian khám bệnh trong ngày không tồn tại");
+    throw new Error(
+      "Thời gian khám bệnh trong ngày không tồn tại hoặc đã kín lịch"
+    );
+  }
+  const bookings = Booking.find({
+    scheduleID,
+    time,
+    status: { $ne: "Đã hủy" },
+  });
+  if (bookings.length >= alreadyTime.maxNumber) {
+    throw new Error("Đã kín giờ khám này");
   }
   const response = await Booking.create({
     patientID,
