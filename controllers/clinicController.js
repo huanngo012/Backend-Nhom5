@@ -1,6 +1,7 @@
 const moment = require("moment");
 const Clinic = require("../models/clinic");
 const Specialty = require("../models/specialty");
+const User = require("../models/user");
 const asyncHandler = require("express-async-handler");
 const cloudinary = require("../config/cloudinary.config");
 
@@ -36,7 +37,7 @@ const getAllClinics = asyncHandler(async (req, res) => {
     };
   }
 
-  let queryCommand = Clinic.find(formatedQueries);
+  let queryCommand = Clinic.find(formatedQueries).select("-specialtyID");
 
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
