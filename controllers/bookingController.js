@@ -75,8 +75,8 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
 
 const cancelBookingByPatient = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const booking = await Booking.findById(id);
-  if (booking.status !== "Đang xử lý") {
+  const booking = await Booking.find({ _id: id, status: "Đang xử lý" });
+  if (booking) {
     await Booking.findByIdAndUpdate(
       id,
       { status: "Đã hủy" },
@@ -163,6 +163,7 @@ module.exports = {
   getBookings,
   getBookingsByPatientID,
   addBookingByPatient,
+  cancelBookingByPatient,
   updateBooking,
   deleteBooking,
   addBooking,
