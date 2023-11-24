@@ -25,6 +25,10 @@ var userSchema = new mongoose.Schema(
     avatar: {
       type: String,
     },
+    gender: {
+      type: String,
+      enum: ["MALE", "FEMALE"],
+    },
     role: {
       type: Number,
       default: 4,

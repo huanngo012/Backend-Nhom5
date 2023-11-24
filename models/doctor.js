@@ -21,6 +21,9 @@ var doctorSchema = new mongoose.Schema(
     roomID: {
       type: String,
     },
+    position: {
+      type: String,
+    },
   },
   {
     timestamps: true,
