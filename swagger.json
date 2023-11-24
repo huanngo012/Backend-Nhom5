@@ -6,22 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://{{base_url}}user"
-    },
-    {
-      "url": "http://{{base_url}}clinic"
-    },
-    {
-      "url": "http://{{base_url}}specialty"
-    },
-    {
-      "url": "http://{{base_url}}schedule"
-    },
-    {
-      "url": "http://{{base_url}}booking"
-    },
-    {
-      "url": "http://{{base_url}}doctor"
+      "url": "http://localhost:5000"
     }
   ],
   "tags": [
@@ -57,7 +42,7 @@
     }
   ],
   "paths": {
-    "/count-patient": {
+    "/user/count-patient": {
       "get": {
         "tags": ["User"],
         "summary": "Count Patient",
@@ -70,27 +55,60 @@
           "200": {
             "description": "OK",
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "success": true,
+                    "data": [0, 13]
+                  }
+                }
+              }
             }
           }
         }
       }
     },
-    "/65098f8570762eefba978e24": {
+    "/user/{userID}": {
       "get": {
         "tags": ["User"],
         "summary": "Get User",
+        "parameters": [
+          {
+            "name": "userID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "_id": "65098f8570762eefba978e24",
+                      "fullName": "Huân Ngô",
+                      "email": "huanngo120",
+                      "mobile": "090909007",
+                      "address": "",
+                      "createdAt": "2023-09-19T12:09:41.969Z",
+                      "updatedAt": "2023-09-19T12:09:41.969Z",
+                      "__v": 0
+                    }
+                  }
+                }
+              }
             }
           }
         }
       }
     },
-    "/current": {
+    "/user/current": {
       "get": {
         "tags": ["User"],
         "summary": "Get Current User",
@@ -98,7 +116,24 @@
           "200": {
             "description": "Successful response",
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "success": true,
+                    "data": {
+                      "_id": "650a6c2da155729fbadbb8b9",
+                      "fullName": "Admin",
+                      "email": "admin@gmail.com",
+                      "mobile": "090909009",
+                      "address": "",
+                      "createdAt": "2023-09-20T03:51:10.000Z",
+                      "updatedAt": "2023-11-04T13:57:14.253Z",
+                      "__v": 0
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -119,7 +154,7 @@
         }
       }
     },
-    "/refreshtoken": {
+    "/user/refreshtoken": {
       "post": {
         "tags": ["User"],
         "summary": "RefreshAccessToken",
@@ -446,6 +481,15 @@
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "description": "The name that needs to be fetched. Use user1 for testing. ",
+            "required": true,
+            "type": "string"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -496,7 +540,31 @@
           "200": {
             "description": "Successful response",
             "content": {
-              "application/json": {}
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "fullName": "Huan Ngo",
+                    "email": "huanngo@gmail.com",
+                    "password": "123456",
+                    "mobile": "0909090013"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "success": false,
+                    "message": "Tài khoản đã tồn tại"
+                  }
+                }
+              }
             }
           }
         }

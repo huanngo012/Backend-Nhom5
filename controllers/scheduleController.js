@@ -2,6 +2,7 @@ const Schedule = require("../models/schedule");
 const Booking = require("../models/booking");
 const Doctor = require("../models/doctor");
 const asyncHandler = require("express-async-handler");
+const moment = require("moment");
 const ObjectID = require("mongodb").ObjectId;
 
 const getSchedules = asyncHandler(async (req, res) => {
@@ -18,8 +19,19 @@ const getSchedules = asyncHandler(async (req, res) => {
   if (queries?.doctorID) {
     formatedQueries.doctorID = new ObjectID(queries.doctorID);
   }
+
+  if (queries?.startDate && queries?.endDate) {
+    const start = new Date(+queries?.startDate);
+    const end = new Date(+queries?.endDate);
+    formatedQueries.date = {
+      $gte: start,
+      $lte: end,
+    };
+    delete formatedQueries?.startDate;
+    delete formatedQueries?.endDate;
+  }
   if (queries?.date) {
-    formatedQueries.date = new Date(queries.date);
+    formatedQueries.date = new Date(+queries.date);
   }
   if (queries?.timeType) {
     const timeArr = queries?.timeType.split(",");
@@ -28,7 +40,6 @@ const getSchedules = asyncHandler(async (req, res) => {
         "timeType.time": item,
       };
     });
-    console.log(timeArr);
     formatedQueries.timeType = { $or: timeArr };
   }
   console.log(formatedQueries);
@@ -51,6 +62,7 @@ const getSchedules = asyncHandler(async (req, res) => {
 
   const response = await queryCommand.exec();
   const counts = await Schedule.find(formatedQueries).countDocuments();
+
   return res.status(200).json({
     success: response.length > 0 ? true : false,
     data:
@@ -101,22 +113,22 @@ const addSchedule = asyncHandler(async (req, res) => {
   if (!alreadyDoctor) {
     throw new Error("Bác sĩ không tồn tại");
   }
-  const newDate = new Date(date);
-  newDate.setUTCHours(0, 0, 0, 0);
-  newDate.setDate(newDate.getDate() + 1); // Cộng thêm 1 ngày
+  const newDate = new Date(+date);
+  newDate.setHours(7, 0, 0, 0);
+  newDate.setDate(newDate.getDate());
   const isDuplicateTime = timeType.some(
     (item, index, array) =>
       array.filter((subItem) => subItem.time === item.time).length > 1
   );
   if (isDuplicateTime) {
-    throw new Error("Giờ làm việc bị trùng.Vui lòng nhập đúng");
+    throw new Error("Giờ làm việc bị trùng. Vui lòng nhập đúng");
   }
   const alreadySchedule = await Schedule.find({ doctorID, date: newDate });
   if (alreadySchedule.length > 0) {
     throw new Error(
       `Đã tồn tại lịch khám của bác sĩ ngày ${new Date(newDate).getDate()}/${
         new Date(newDate).getMonth() + 1
-      }/${new Date(newDate).getUTCFullYear()}`
+      }/${new Date(newDate).getFullYear()}`
     );
   } else {
     const response = await Schedule.create({
@@ -136,8 +148,8 @@ const updateSchedule = asyncHandler(async (req, res) => {
   if (Object.keys(req.body).length === 0)
     throw new Error("Vui lòng nhập đầy đủ");
   if (req.body.date) {
-    const newDate = new Date(req.body.date);
-    newDate.setUTCHours(0, 0, 0, 0);
+    const newDate = new Date(+req.body.date);
+    newDate.setHours(7, 0, 0, 0);
     newDate.setDate(newDate.getDate());
     req.body.date = newDate;
   }
@@ -153,7 +165,7 @@ const updateSchedule = asyncHandler(async (req, res) => {
           req.body.date
         ).getDate()}/${new Date(req.body.date).getMonth() + 1}/${new Date(
           req.body.date
-        ).getUTCFullYear()}`
+        ).getFullYear()}`
       );
     }
   }

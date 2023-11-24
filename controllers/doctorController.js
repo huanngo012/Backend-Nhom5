@@ -3,6 +3,7 @@ const Doctor = require("../models/doctor");
 const User = require("../models/user");
 const Clinic = require("../models/clinic");
 const Specialty = require("../models/specialty");
+const Schedule = require("../models/schedule");
 const asyncHandler = require("express-async-handler");
 const ObjectID = require("mongodb").ObjectId;
 const cloudinary = require("../config/cloudinary.config");
@@ -85,7 +86,6 @@ const getAllDoctors = asyncHandler(async (req, res) => {
     ...nameClinicQueries,
     ...nameSpecialtyQueries,
   };
-  console.log(q);
   let queryCommand = Doctor.find(q).populate({
     path: "_id",
   });
@@ -110,15 +110,35 @@ const getAllDoctors = asyncHandler(async (req, res) => {
       path: "specialtyID",
       select: "name clinicID description image",
     })
-    .populate({
-      path: "roomID",
-      select: "name description image",
-    })
     .exec();
   const counts = await Doctor.find(q).countDocuments();
+  //Get Days
+  let currentDate = moment();
+  let startDate = currentDate.clone().startOf("isoweek");
+  let endDate = currentDate.clone().endOf("isoweek");
+  const newResponse = [];
+
+  for (const doctor of response) {
+    const schedules = await Schedule.find({
+      doctorID: doctor?._id,
+      date: { $gte: startDate, $lte: endDate },
+    });
+
+    const days = schedules.map((schedule) => {
+      const day = schedule.date.getDay();
+      return day;
+    });
+
+    const { _doc } = doctor;
+    newResponse.push({
+      ..._doc,
+      ...{ schedules: days },
+    });
+  }
+
   return res.status(200).json({
-    success: response ? true : false,
-    data: response ? response : "Lấy danh sách bác sĩ không thành công",
+    success: newResponse ? true : false,
+    data: newResponse ? newResponse : "Lấy danh sách bác sĩ không thành công",
     counts,
   });
 });

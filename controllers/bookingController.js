@@ -22,7 +22,25 @@ const getBookingsByPatientID = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const response = await Booking.find({ patientID: _id }).populate({
     path: "scheduleID",
-    populate: { path: "doctorID", model: "Doctor" },
+    populate: {
+      path: "doctorID",
+      model: "Doctor",
+      populate: [
+        {
+          path: "clinicID",
+          model: "Clinic",
+          select: { specialtyID: 0 },
+        },
+        {
+          path: "specialtyID",
+          model: "Specialty",
+        },
+        {
+          path: "_id",
+          model: "User",
+        },
+      ],
+    },
   });
   return res.status(200).json({
     success: response ? true : false,

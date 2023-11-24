@@ -76,6 +76,7 @@ const addSpecialty = asyncHandler(async (req, res) => {
     const { url } = await cloudinary.uploader.upload(image, {
       folder: "booking",
     });
+
     req.body.image = url;
   }
   const response = await Specialty.create(req.body);
