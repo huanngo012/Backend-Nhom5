@@ -262,7 +262,9 @@ const updateUserByAdmin = asyncHandler(async (req, res) => {
   }).select("-password");
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Cập nhật thông tin người dùng thất bại",
+    message: response
+      ? "Cập nhật thông tin người dùng thành công"
+      : "Cập nhật thông tin người dùng thất bại",
   });
 });
 const deleteUser = asyncHandler(async (req, res) => {

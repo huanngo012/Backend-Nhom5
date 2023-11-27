@@ -2,10 +2,11 @@ const Schedule = require("../models/schedule");
 const Booking = require("../models/booking");
 const Doctor = require("../models/doctor");
 const asyncHandler = require("express-async-handler");
-const moment = require("moment");
+const moment = require("moment-timezone");
 const ObjectID = require("mongodb").ObjectId;
 
 const getSchedules = asyncHandler(async (req, res) => {
+  let nameSpecialty;
   const queries = { ...req.query };
   const exludeFields = ["limit", "sort", "page", "fields"];
   exludeFields.forEach((el) => delete queries[el]);
@@ -19,10 +20,14 @@ const getSchedules = asyncHandler(async (req, res) => {
   if (queries?.doctorID) {
     formatedQueries.doctorID = new ObjectID(queries.doctorID);
   }
+  if (queries?.nameSpecialty) {
+    nameSpecialty = queries?.nameSpecialty;
+    delete formatedQueries?.nameSpecialty;
+  }
 
   if (queries?.startDate && queries?.endDate) {
-    const start = new Date(+queries?.startDate);
-    const end = new Date(+queries?.endDate);
+    const start = +queries?.startDate + 7 * 60 * 60 * 1000;
+    const end = +queries?.endDate + 7 * 60 * 60 * 1000;
     formatedQueries.date = {
       $gte: start,
       $lte: end,
@@ -31,7 +36,7 @@ const getSchedules = asyncHandler(async (req, res) => {
     delete formatedQueries?.endDate;
   }
   if (queries?.date) {
-    formatedQueries.date = new Date(+queries.date);
+    formatedQueries.date = moment(+queries?.date).format();
   }
   if (queries?.timeType) {
     const timeArr = queries?.timeType.split(",");
@@ -43,7 +48,25 @@ const getSchedules = asyncHandler(async (req, res) => {
     formatedQueries.timeType = { $or: timeArr };
   }
   console.log(formatedQueries);
-  let queryCommand = Schedule.find(formatedQueries).populate("doctorID");
+  let queryCommand = Schedule.find(formatedQueries).populate({
+    path: "doctorID",
+    model: "Doctor",
+    populate: [
+      {
+        path: "clinicID",
+        select: { specialtyID: 0 },
+      },
+      {
+        path: "specialtyID",
+        match: nameSpecialty
+          ? { name: { $regex: nameSpecialty, $options: "i" } }
+          : {},
+      },
+      {
+        path: "_id",
+      },
+    ],
+  });
 
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
@@ -60,14 +83,16 @@ const getSchedules = asyncHandler(async (req, res) => {
   const skip = (page - 1) * limit;
   queryCommand.skip(skip).limit(limit);
 
-  const response = await queryCommand.exec();
+  let response = await queryCommand.exec();
   const counts = await Schedule.find(formatedQueries).countDocuments();
-
+  const newResponse = response.filter(
+    (el) => el?.doctorID?.specialtyID !== null
+  );
   return res.status(200).json({
-    success: response.length > 0 ? true : false,
+    success: newResponse.length > 0 ? true : false,
     data:
-      response.length > 0
-        ? response
+      newResponse.length > 0
+        ? newResponse
         : "Lấy danh sách lịch khám bệnh của các bác sĩ thất bại",
     counts,
   });

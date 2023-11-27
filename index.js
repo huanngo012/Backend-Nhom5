@@ -5,6 +5,8 @@ const cors = require("cors");
 //
 const dbConnect = require("./config/dbconnect");
 const initRoutes = require("./routes");
+const moment = require("moment-timezone");
+moment.tz.setDefault("Asia/Ho_Chi_Minh");
 
 //swagger
 const CSS_URL =

@@ -1,4 +1,4 @@
-const moment = require("moment");
+const moment = require("moment-timezone");
 const Doctor = require("../models/doctor");
 const User = require("../models/user");
 const Clinic = require("../models/clinic");
@@ -108,7 +108,11 @@ const getAllDoctors = asyncHandler(async (req, res) => {
   const response = await queryCommand
     .populate({
       path: "specialtyID",
-      select: "name clinicID description image",
+      select: "name description image",
+    })
+    .populate({
+      path: "clinicID",
+      select: "name address description image",
     })
     .exec();
   const counts = await Doctor.find(q).countDocuments();
