@@ -106,6 +106,7 @@ const getAllDoctors = asyncHandler(async (req, res) => {
   queryCommand.skip(skip).limit(limit);
 
   const response = await queryCommand
+    .select("-ratings")
     .populate({
       path: "specialtyID",
       select: "name description image",
@@ -154,6 +155,13 @@ const getDoctor = asyncHandler(async (req, res) => {
     .populate({
       path: "clinicID",
       select: "name address description image",
+    })
+    .populate({
+      path: "ratings",
+      populate: {
+        path: "postedBy",
+        select: "fullName avatar",
+      },
     });
   return res.status(200).json({
     success: response ? true : false,
@@ -178,7 +186,7 @@ const getCountDoctor = asyncHandler(async (req, res) => {
 });
 
 const addDoctor = asyncHandler(async (req, res) => {
-  const { id, clinicID, specialtyID, description, roomID, avatar } = req.body;
+  const { id, clinicID, specialtyID, description, roomID, position } = req.body;
   const { _id, role } = req.user;
   if (role == 3) {
     const isHost = await Clinic.find({ _id: clinicID, host: _id });
@@ -201,28 +209,22 @@ const addDoctor = asyncHandler(async (req, res) => {
   const alreadyClinic = await Clinic.findById(clinicID);
   if (alreadySpecialty && alreadyClinic) {
     const specialty = alreadyClinic?.specialtyID.find(
-      (el) => el === specialtyID
+      (el) => el.toString() === specialtyID
     );
     if (!specialty) throw new Error("Bệnh viện không tồn tại chuyên khoa này");
-    if (avatar) {
-      const { url } = await cloudinary.uploader.upload(avatar, {
-        folder: "booking",
-      });
-      req.body.avatar = url;
-    }
-    await User.findByIdAndUpdate(id, {
-      avatar: req.body.avatar,
-    });
     const response = await Doctor.create({
       _id: id,
       specialtyID,
+      position,
       clinicID,
       description,
       roomID,
     });
     return res.status(200).json({
       success: response ? true : false,
-      data: response ? response : "Thêm thông tin bác sĩ thất bại",
+      message: response
+        ? "Thêm thông tin bác sĩ thành công"
+        : "Thêm thông tin bác sĩ thất bại",
     });
   }
   return res.status(200).json({
@@ -277,7 +279,9 @@ const updateDoctor = asyncHandler(async (req, res) => {
   });
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Cập nhật thông tin bác sĩ thất bại",
+    message: response
+      ? "Cập nhật thông tin bác sĩ thành công"
+      : "Cập nhật thông tin bác sĩ thất bại",
   });
 });
 const deleteDoctor = asyncHandler(async (req, res) => {
@@ -295,6 +299,51 @@ const deleteDoctor = asyncHandler(async (req, res) => {
   });
 });
 
+const ratingsDoctor = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { star, comment, doctorID, updatedAt } = req.body;
+  if (!star || !doctorID) {
+    throw new Error("Vui lòng nhập đầy đủ");
+  }
+  const ratingDoctor = await Doctor.findById(doctorID);
+  const alreadyDoctor = ratingDoctor?.ratings?.find(
+    (el) => el.postedBy.toString() === _id
+  );
+  if (alreadyDoctor) {
+    await Doctor.updateOne(
+      {
+        ratings: { $elemMatch: alreadyDoctor },
+      },
+      {
+        $set: {
+          "ratings.$.star": star,
+          "ratings.$.comment": comment,
+          "ratings.$.updatedAt": updatedAt,
+        },
+      },
+      { new: true }
+    );
+  } else {
+    await Doctor.findByIdAndUpdate(
+      doctorID,
+      {
+        $push: { ratings: { star, comment, postedBy: _id, updatedAt } },
+      },
+      { new: true }
+    );
+  }
+  const updatedDoctor = await Doctor.findById(doctorID);
+  const ratingCount = updatedDoctor.ratings.length;
+  const sum = updatedDoctor.ratings.reduce((sum, el) => sum + +el.star, 0);
+
+  updatedDoctor.totalRatings = Math.round((sum * 10) / ratingCount) / 10;
+  await updatedDoctor.save();
+  return res.status(200).json({
+    success: true,
+    data: `Đánh giá thành công`,
+  });
+});
+
 module.exports = {
   getAllDoctors,
   getDoctor,
@@ -302,4 +351,5 @@ module.exports = {
   deleteDoctor,
   updateDoctor,
   addDoctor,
+  ratingsDoctor,
 };

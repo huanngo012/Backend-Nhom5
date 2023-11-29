@@ -37,7 +37,9 @@ const getAllClinics = asyncHandler(async (req, res) => {
     };
   }
 
-  let queryCommand = Clinic.find(formatedQueries).select("-specialtyID");
+  let queryCommand = Clinic.find(formatedQueries)
+    .populate("specialtyID")
+    .populate({ path: "host", select: "fullName email" });
 
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
@@ -101,7 +103,7 @@ const addClinic = asyncHandler(async (req, res) => {
   const response = await Clinic.create(req.body);
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Thêm bệnh viện thất bại",
+    message: response ? "Thêm bệnh viện thành công" : "Thêm bệnh viện thất bại",
   });
 });
 const updateClinic = asyncHandler(async (req, res) => {
@@ -165,6 +167,51 @@ const updateClinicByHost = asyncHandler(async (req, res) => {
   });
 });
 
+const ratingsClinic = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { star, comment, clinicID, updatedAt } = req.body;
+  if (!star || !clinicID) {
+    throw new Error("Vui lòng nhập đầy đủ");
+  }
+  const ratingClinic = await Clinic.findById(clinicID);
+  const alreadyClinic = ratingClinic?.ratings?.find(
+    (el) => el.postedBy.toString() === _id
+  );
+  if (alreadyClinic) {
+    await Clinic.updateOne(
+      {
+        ratings: { $elemMatch: alreadyClinic },
+      },
+      {
+        $set: {
+          "ratings.$.star": star,
+          "ratings.$.comment": comment,
+          "ratings.$.updatedAt": updatedAt,
+        },
+      },
+      { new: true }
+    );
+  } else {
+    await Clinic.findByIdAndUpdate(
+      clinicID,
+      {
+        $push: { ratings: { star, comment, postedBy: _id, updatedAt } },
+      },
+      { new: true }
+    );
+  }
+  const updatedClinic = await Clinic.findById(clinicID);
+  const ratingCount = updatedClinic.ratings.length;
+  const sum = updatedClinic.ratings.reduce((sum, el) => sum + +el.star, 0);
+
+  updatedClinic.totalRatings = Math.round((sum * 10) / ratingCount) / 10;
+  await updatedClinic.save();
+  return res.status(200).json({
+    success: true,
+    data: `Đánh giá thành công`,
+  });
+});
+
 module.exports = {
   getAllClinics,
   getClinic,
@@ -173,4 +220,5 @@ module.exports = {
   updateClinic,
   deleteClinic,
   updateClinicByHost,
+  ratingsClinic,
 };

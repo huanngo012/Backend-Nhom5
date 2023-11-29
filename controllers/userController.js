@@ -11,8 +11,8 @@ const bcryptjs = require("bcryptjs");
 const cloudinary = require("../config/cloudinary.config");
 
 const register = asyncHandler(async (req, res) => {
-  const { email, password, fullName, mobile } = req.body;
-  if (!email || !password || !fullName || !mobile)
+  const { email, password, fullName, mobile, gender } = req.body;
+  if (!email || !password || !fullName || !mobile || !gender)
     return res.status(400).json({
       success: false,
       message: "Vui lòng nhập đầy đủ",
@@ -207,6 +207,25 @@ const getUsers = asyncHandler(async (req, res) => {
 
   const response = await queryCommand.exec();
   const counts = await User.find(formatedQueries).countDocuments();
+  if (formatedQueries?.role === "3") {
+    let usersWithoutDoctor = [];
+
+    for (const user of response) {
+      const doctorInfo = await Doctor.findOne({ _id: user._id }).exec();
+
+      if (!doctorInfo) {
+        usersWithoutDoctor.push(user);
+      }
+    }
+    return res.status(200).json({
+      success: usersWithoutDoctor.length > 0 ? true : false,
+      data:
+        usersWithoutDoctor.length > 0
+          ? usersWithoutDoctor
+          : "Lấy danh sách người dùng thất bại",
+      counts,
+    });
+  }
   return res.status(200).json({
     success: response.length > 0 ? true : false,
     data: response.length > 0 ? response : "Lấy danh sách người dùng thất bại",

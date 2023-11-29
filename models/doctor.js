@@ -24,6 +24,18 @@ var doctorSchema = new mongoose.Schema(
     position: {
       type: String,
     },
+    ratings: [
+      {
+        star: { type: Number },
+        postedBy: { type: mongoose.Types.ObjectId, ref: "User" },
+        comment: { type: String },
+        updatedAt: { type: Date, default: Date.now() },
+      },
+    ],
+    totalRatings: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

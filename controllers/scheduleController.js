@@ -7,6 +7,7 @@ const ObjectID = require("mongodb").ObjectId;
 
 const getSchedules = asyncHandler(async (req, res) => {
   let nameSpecialty;
+  let nameClinic;
   const queries = { ...req.query };
   const exludeFields = ["limit", "sort", "page", "fields"];
   exludeFields.forEach((el) => delete queries[el]);
@@ -20,14 +21,20 @@ const getSchedules = asyncHandler(async (req, res) => {
   if (queries?.doctorID) {
     formatedQueries.doctorID = new ObjectID(queries.doctorID);
   }
+
   if (queries?.nameSpecialty) {
     nameSpecialty = queries?.nameSpecialty;
     delete formatedQueries?.nameSpecialty;
   }
 
+  if (queries?.nameClinic) {
+    nameClinic = queries?.nameClinic;
+    delete formatedQueries?.nameClinic;
+  }
+
   if (queries?.startDate && queries?.endDate) {
-    const start = +queries?.startDate + 7 * 60 * 60 * 1000;
-    const end = +queries?.endDate + 7 * 60 * 60 * 1000;
+    const start = new Date(+queries?.startDate);
+    const end = new Date(+queries?.endDate);
     formatedQueries.date = {
       $gte: start,
       $lte: end,
@@ -36,7 +43,7 @@ const getSchedules = asyncHandler(async (req, res) => {
     delete formatedQueries?.endDate;
   }
   if (queries?.date) {
-    formatedQueries.date = moment(+queries?.date).format();
+    formatedQueries.date = new Date(+queries.date);
   }
   if (queries?.timeType) {
     const timeArr = queries?.timeType.split(",");
@@ -53,17 +60,31 @@ const getSchedules = asyncHandler(async (req, res) => {
     model: "Doctor",
     populate: [
       {
-        path: "clinicID",
-        select: { specialtyID: 0 },
+        path: "_id",
+        model: "User",
+        select: { __v: 0, password: 0, createdAt: 0, updatedAt: 0, role: 0 },
       },
       {
         path: "specialtyID",
+        model: "Specialty",
         match: nameSpecialty
           ? { name: { $regex: nameSpecialty, $options: "i" } }
           : {},
       },
       {
-        path: "_id",
+        path: "clinicID",
+        model: "Clinic",
+        match: nameClinic
+          ? { name: { $regex: nameClinic, $options: "i" } }
+          : {},
+        select: {
+          specialtyID: 0,
+          address: 0,
+          image: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          __v: 0,
+        },
       },
     ],
   });
@@ -85,9 +106,11 @@ const getSchedules = asyncHandler(async (req, res) => {
 
   let response = await queryCommand.exec();
   const counts = await Schedule.find(formatedQueries).countDocuments();
-  const newResponse = response.filter(
-    (el) => el?.doctorID?.specialtyID !== null
+  let newResponse = response.filter(
+    (el) =>
+      el?.doctorID?.specialtyID !== null && el?.doctorID?.clinicID !== null
   );
+
   return res.status(200).json({
     success: newResponse.length > 0 ? true : false,
     data:
@@ -97,6 +120,7 @@ const getSchedules = asyncHandler(async (req, res) => {
     counts,
   });
 });
+
 const getSchedule = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const response = await Schedule.findById(id).populate("doctorID");

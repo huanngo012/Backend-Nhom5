@@ -10,7 +10,7 @@ var bookingSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Đang xử lý",
-      enum: ["Đã hủy", "Đang xử lý", "Đã xác nhân", "Đã khám", "Bỏ khám"],
+      enum: ["Đã hủy", "Đang xử lý", "Đã xác nhận", "Đã khám", "Bỏ khám"],
     },
     description: {
       type: String,
@@ -25,6 +25,10 @@ var bookingSchema = new mongoose.Schema(
     },
     qr_code: {
       type: String,
+    },
+    isPaid: {
+      type: Boolean,
+      default: false,
     },
   },
   {

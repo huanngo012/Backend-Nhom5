@@ -82,7 +82,9 @@ const addSpecialty = asyncHandler(async (req, res) => {
   const response = await Specialty.create(req.body);
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Thêm chuyên khoa thất bại",
+    message: response
+      ? "Thêm chuyên khoa thành công"
+      : "Thêm chuyên khoa thất bại",
   });
 });
 

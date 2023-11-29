@@ -66,19 +66,38 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
         "Thời gian khám bệnh trong ngày không tồn tại hoặc đã kín lịch"
       );
     }
-    const bookings = Booking.find({
-      scheduleID,
-      time,
-      status: { $ne: "Đã hủy" },
-    });
-    if (bookings.length >= alreadyTime.maxNumber) {
-      throw new Error("Đã kín giờ khám này");
-    }
+    // const alreadyBooking = Booking.find({
+    //   patientID: _id,
+    //   scheduleID,
+    //   time,
+    // });
+    // console.log(alreadyBooking);
+    // if (alreadyBooking) {
+    //   throw new Error("Bạn đã đặt lịch khám thời gian này rồi");
+    // }
     const response = await Booking.create({
       patientID: _id,
       scheduleID,
       time,
     });
+    const bookings = Booking.find({
+      scheduleID,
+      time,
+      status: { $ne: "Đã hủy" },
+    });
+    if (bookings.length === alreadyTime.maxNumber) {
+      await Schedule.updateOne(
+        {
+          timeType: { $elemMatch: alreadyTime },
+        },
+        {
+          $set: {
+            "timeType.$.full": true,
+          },
+        },
+        { new: true }
+      );
+    }
     return res.status(200).json({
       success: response ? true : false,
       data: response ? response : "Đặt lịch thất bại",
@@ -92,9 +111,20 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
 });
 
 const cancelBookingByPatient = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
   const { id } = req.params;
-  const booking = await Booking.find({ _id: id, status: "Đang xử lý" });
-  if (booking) {
+
+  const booking = await Booking.find({
+    _id: id,
+    status: "Đang xử lý",
+    patientID: _id,
+  }).populate({
+    path: "scheduleID",
+    select: "date",
+  });
+  let now = new Date();
+  now.setDate(now.getDate() + 1);
+  if (booking && new Date(booking?.scheduleID?.date) > now) {
     await Booking.findByIdAndUpdate(
       id,
       { status: "Đã hủy" },
@@ -109,7 +139,7 @@ const cancelBookingByPatient = asyncHandler(async (req, res) => {
   }
   return res.status(200).json({
     success: false,
-    message: `Không thể hủy lịch khám do bác sĩ đã xác nhận!!! Vui lòng liên hệ lại với bác sĩ`,
+    message: `Không thể hủy lịch khám`,
   });
 });
 

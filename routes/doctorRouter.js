@@ -11,5 +11,6 @@ router.get("/:id", ctrls.getDoctor);
 router.post("/", [verifyAccessToken, isAdminOrHost], ctrls.addDoctor);
 router.put("/:id", [verifyAccessToken, isAdminOrHost], ctrls.updateDoctor);
 router.delete("/:id", [verifyAccessToken, isAdminOrHost], ctrls.deleteDoctor);
+router.put("/rating", [verifyAccessToken], ctrls.ratingsDoctor);
 
 module.exports = router;

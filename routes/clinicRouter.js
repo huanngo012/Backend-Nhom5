@@ -13,5 +13,6 @@ router.post("/", [verifyAccessToken, isAdmin], ctrls.addClinic);
 router.put("/:id", [verifyAccessToken, isAdmin], ctrls.updateClinic);
 router.delete("/:id", [verifyAccessToken, isAdmin], ctrls.deleteClinic);
 router.put("/host/:id", [verifyAccessToken, isHost], ctrls.updateClinicByHost);
+router.put("/rating", [verifyAccessToken], ctrls.ratingsClinic);
 
 module.exports = router;

@@ -23,6 +23,18 @@ var clinicSchema = new mongoose.Schema(
     },
     specialtyID: [{ type: mongoose.Types.ObjectId, ref: "Specialty" }],
     host: { type: mongoose.Types.ObjectId, ref: "User" },
+    ratings: [
+      {
+        star: { type: Number },
+        postedBy: { type: mongoose.Types.ObjectId, ref: "User" },
+        comment: { type: String },
+        updatedAt: { type: Date, default: Date.now() },
+      },
+    ],
+    totalRatings: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
