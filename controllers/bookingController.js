@@ -44,9 +44,7 @@ const getBookingsByPatientID = asyncHandler(async (req, res) => {
   });
   return res.status(200).json({
     success: response ? true : false,
-    data: response
-      ? response
-      : "Lấy danh sách lịch khám bệnh của bác sĩ thành công",
+    data: response ? response : "Lấy danh sách lịch khám bệnh thất bại",
   });
 });
 const addBookingByPatient = asyncHandler(async (req, res) => {
@@ -66,21 +64,31 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
         "Thời gian khám bệnh trong ngày không tồn tại hoặc đã kín lịch"
       );
     }
-    // const alreadyBooking = Booking.find({
-    //   patientID: _id,
-    //   scheduleID,
-    //   time,
-    // });
-    // console.log(alreadyBooking);
-    // if (alreadyBooking) {
-    //   throw new Error("Bạn đã đặt lịch khám thời gian này rồi");
-    // }
+    const alreadyBooking = await Booking.find({
+      patientID: _id,
+      time,
+    }).populate({
+      path: "scheduleID",
+      select: "date",
+    });
+    if (alreadyBooking.length > 0) {
+      alreadyBooking?.forEach((el) => {
+        if (
+          new Date(+alreadySchedule.date).getTime() ===
+          new Date(+el?.scheduleID?.date).getTime()
+        ) {
+          console.log("aaa");
+          throw new Error("Bạn đã đặt lịch khám thời gian này rồi");
+        }
+      });
+    }
+
     const response = await Booking.create({
       patientID: _id,
       scheduleID,
       time,
     });
-    const bookings = Booking.find({
+    const bookings = await Booking.find({
       scheduleID,
       time,
       status: { $ne: "Đã hủy" },
@@ -88,6 +96,7 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
     if (bookings.length === alreadyTime.maxNumber) {
       await Schedule.updateOne(
         {
+          _id: scheduleID,
           timeType: { $elemMatch: alreadyTime },
         },
         {
@@ -113,18 +122,12 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
 const cancelBookingByPatient = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const { id } = req.params;
-
   const booking = await Booking.find({
     _id: id,
     status: "Đang xử lý",
     patientID: _id,
-  }).populate({
-    path: "scheduleID",
-    select: "date",
   });
-  let now = new Date();
-  now.setDate(now.getDate() + 1);
-  if (booking && new Date(booking?.scheduleID?.date) > now) {
+  if (booking) {
     await Booking.findByIdAndUpdate(
       id,
       { status: "Đã hủy" },
@@ -139,7 +142,7 @@ const cancelBookingByPatient = asyncHandler(async (req, res) => {
   }
   return res.status(200).json({
     success: false,
-    message: `Không thể hủy lịch khám`,
+    message: `Không thể hủy lịch khám do bác sĩ đã xác nhận!!!`,
   });
 });
 

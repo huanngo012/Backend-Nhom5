@@ -29,13 +29,14 @@ var userSchema = new mongoose.Schema(
       type: String,
       enum: ["MALE", "FEMALE"],
     },
-    role: {
-      type: Number,
-      default: 4,
-    },
+
     address: {
       type: String,
       default: "",
+    },
+    role: {
+      type: Number,
+      default: 4,
     },
     isBlocked: {
       type: Boolean,

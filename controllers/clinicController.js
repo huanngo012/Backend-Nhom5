@@ -180,6 +180,7 @@ const ratingsClinic = asyncHandler(async (req, res) => {
   if (alreadyClinic) {
     await Clinic.updateOne(
       {
+        _id: clinicID,
         ratings: { $elemMatch: alreadyClinic },
       },
       {

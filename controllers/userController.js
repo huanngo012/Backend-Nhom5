@@ -105,6 +105,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     accessToken,
   });
 });
+
 const getCurrent = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const response = await User.findById(_id).select(
@@ -113,6 +114,31 @@ const getCurrent = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Không tìm thấy người dùng",
+  });
+});
+const updateUser = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  if (!_id || Object.keys(req.body).length === 0)
+    throw new Error("Vui lòng nhập đầy đủ");
+  const { password, avatar } = req.body;
+  if (password) {
+    const salt = bcryptjs.genSaltSync(10);
+    req.body.password = await bcryptjs.hash(password, salt);
+  }
+  if (avatar) {
+    const { url } = await cloudinary.uploader.upload(avatar, {
+      folder: "booking",
+    });
+    req.body.avatar = url;
+  }
+  const response = await User.findByIdAndUpdate(_id, req.body, {
+    new: true,
+  }).select("-password -role -isBlocked -refreshToken");
+  return res.status(200).json({
+    success: response ? true : false,
+    message: response
+      ? "Cập nhật thông tin người dùng thành công"
+      : "Cập nhật thông tin người dùng thất bại",
   });
 });
 
@@ -140,30 +166,6 @@ const getCountPatient = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: totalCount ? true : false,
     data: [totalNewUser, totalCount],
-  });
-});
-
-const updateUser = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  if (!_id || Object.keys(req.body).length === 0)
-    throw new Error("Vui lòng nhập đầy đủ");
-  const { password, avatar } = req.body;
-  if (password) {
-    const salt = bcryptjs.genSaltSync(10);
-    req.body.password = await bcryptjs.hash(password, salt);
-  }
-  if (avatar) {
-    const { url } = await cloudinary.uploader.upload(avatar, {
-      folder: "booking",
-    });
-    req.body.avatar = url;
-  }
-  const response = await User.findByIdAndUpdate(_id, req.body, {
-    new: true,
-  }).select("-password -role -isBlocked -refreshToken");
-  return res.status(200).json({
-    success: response ? true : false,
-    data: response ? response : "Cập nhật thông tin người dùng thất bại",
   });
 });
 

@@ -2,7 +2,6 @@ const Schedule = require("../models/schedule");
 const Booking = require("../models/booking");
 const Doctor = require("../models/doctor");
 const asyncHandler = require("express-async-handler");
-const moment = require("moment-timezone");
 const ObjectID = require("mongodb").ObjectId;
 
 const getSchedules = asyncHandler(async (req, res) => {

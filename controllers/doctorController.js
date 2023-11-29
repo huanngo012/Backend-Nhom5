@@ -312,6 +312,7 @@ const ratingsDoctor = asyncHandler(async (req, res) => {
   if (alreadyDoctor) {
     await Doctor.updateOne(
       {
+        _id: doctorID,
         ratings: { $elemMatch: alreadyDoctor },
       },
       {
