@@ -135,6 +135,18 @@ const cancelBookingByPatient = asyncHandler(async (req, res) => {
         new: true,
       }
     );
+    await Schedule.updateOne(
+      {
+        _id: booking.scheduleID,
+        timeType: { $elemMatch: alreadyTime },
+      },
+      {
+        $set: {
+          "timeType.$.full": false,
+        },
+      },
+      { new: true }
+    );
     return res.status(200).json({
       success: true,
       message: `Hủy lịch khám thành công`,
