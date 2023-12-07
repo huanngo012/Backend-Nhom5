@@ -21,6 +21,11 @@ var clinicSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    descriptionImg: [
+      {
+        type: String,
+      },
+    ],
     specialtyID: [{ type: mongoose.Types.ObjectId, ref: "Specialty" }],
     host: { type: mongoose.Types.ObjectId, ref: "User" },
     ratings: [

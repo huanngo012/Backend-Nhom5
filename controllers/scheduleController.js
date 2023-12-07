@@ -187,20 +187,23 @@ const addSchedule = asyncHandler(async (req, res) => {
     });
     return res.status(200).json({
       success: response ? true : false,
-      data: response ? response : "Thêm lịch khám thất bại",
+      message: response
+        ? "Thêm lịch khám thành công"
+        : "Thêm lịch khám thất bại",
     });
   }
 });
 const updateSchedule = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  if (Object.keys(req.body).length === 0)
-    throw new Error("Vui lòng nhập đầy đủ");
+  const { doctorID } = req.body;
+  if (!doctorID) throw new Error("Vui lòng nhập ID bác sĩ");
   if (req.body.date) {
     const newDate = new Date(+req.body.date);
     newDate.setHours(7, 0, 0, 0);
     newDate.setDate(newDate.getDate());
     req.body.date = newDate;
   }
+
   if (req.body.doctorID && req.body.date) {
     const alreadySchedule = await Schedule.find({
       _id: { $ne: id },
@@ -222,7 +225,9 @@ const updateSchedule = asyncHandler(async (req, res) => {
   });
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Cập nhật lịch khám bệnh thất bại",
+    message: response
+      ? "Cập nhật lịch khám bệnh thành công"
+      : "Cập nhật lịch khám bệnh thất bại",
   });
 });
 const deleteSchedule = asyncHandler(async (req, res) => {
@@ -231,7 +236,7 @@ const deleteSchedule = asyncHandler(async (req, res) => {
   await Booking.deleteMany({ scheduleID: id });
   return res.status(200).json({
     success: response ? true : false,
-    data: response
+    message: response
       ? `Xóa lịch khám bệnh của bác sĩ thành công`
       : "Xóa lịch khám bệnh của bác sĩ thất bại",
   });

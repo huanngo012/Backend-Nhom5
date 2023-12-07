@@ -2,34 +2,40 @@ const Booking = require("../models/booking");
 const Schedule = require("../models/schedule");
 const User = require("../models/user");
 const asyncHandler = require("express-async-handler");
+const ObjectID = require("mongodb").ObjectId;
+const cloudinary = require("../config/cloudinary.config");
 
 const getBookings = asyncHandler(async (req, res) => {
-  const response = await Booking.find()
-    .populate({
-      path: "scheduleID",
-      select: "doctorID date cost",
-    })
-    .populate({ path: "patientID", select: "fullName mobile avatar" });
-  return res.status(200).json({
-    success: response ? true : false,
-    data: response
-      ? response
-      : "Lấy danh sách lịch khám bệnh của bệnh nhân thất bại",
-  });
-});
+  const { _id, role } = req.user;
 
-const getBookingsByPatientID = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  const response = await Booking.find({ patientID: _id }).populate({
+  const queries = { ...req.query };
+  const exludeFields = ["limit", "sort", "page", "fields"];
+  exludeFields.forEach((el) => delete queries[el]);
+  let queryString = JSON.stringify(queries);
+  queryString = queryString.replace(
+    /\b(gte|gt|lt|lte)\b/g,
+    (macthedEl) => `$${macthedEl}`
+  );
+  const formatedQueries = JSON.parse(queryString);
+  if (queries?.status) {
+    formatedQueries.status = { $regex: queries.status, $options: "i" };
+  }
+  if (role === 4) {
+    formatedQueries.patientID = _id;
+  }
+
+  const queryCommand = Booking.find(formatedQueries).populate({
     path: "scheduleID",
     populate: {
       path: "doctorID",
       model: "Doctor",
+      select: { ratings: 0 },
       populate: [
         {
           path: "clinicID",
           model: "Clinic",
-          select: { specialtyID: 0 },
+          select: { specialtyID: 0, ratings: 0 },
+          match: role === 2 ? { host: new ObjectID(_id) } : {},
         },
         {
           path: "specialtyID",
@@ -38,19 +44,45 @@ const getBookingsByPatientID = asyncHandler(async (req, res) => {
         {
           path: "_id",
           model: "User",
+          match: role === 3 ? { _id: new ObjectID(_id) } : {},
         },
       ],
     },
   });
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(",").join(" ");
+    queryCommand = queryCommand.sort(sortBy);
+  }
+
+  if (req.query.fields) {
+    const fields = req.query.fields.split(",").join(" ");
+    queryCommand = queryCommand.select(fields);
+  }
+
+  const page = +req.query.page || 1;
+  const limit = +req.query.limit || process.env.LIMIT;
+  const skip = (page - 1) * limit;
+  queryCommand.skip(skip).limit(limit);
+
+  const response = await queryCommand.exec();
+
+  let newResponse = response.filter((el) => el?.scheduleID?.doctorID !== null);
+  const counts = newResponse?.length;
+
   return res.status(200).json({
-    success: response ? true : false,
-    data: response ? response : "Lấy danh sách lịch khám bệnh thất bại",
+    success: newResponse.length > 0 ? true : false,
+    data:
+      newResponse.length > 0
+        ? newResponse
+        : "Lấy danh sách lịch khám bệnh thất bại",
+    counts,
   });
 });
+
 const addBookingByPatient = asyncHandler(async (req, res) => {
   const { _id, role } = req.user;
   if (role === 4) {
-    const { scheduleID, time } = req.body;
+    const { scheduleID, time, images } = req.body;
     if (!scheduleID || !time) throw new Error("Vui lòng nhập đầy đủ");
     const alreadySchedule = await Schedule.findById(scheduleID);
     if (!alreadySchedule) {
@@ -77,16 +109,25 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
           new Date(+alreadySchedule.date).getTime() ===
           new Date(+el?.scheduleID?.date).getTime()
         ) {
-          console.log("aaa");
           throw new Error("Bạn đã đặt lịch khám thời gian này rồi");
         }
       });
+    }
+    let urls = [];
+    if (images) {
+      for (const image of images) {
+        const { url } = await cloudinary.uploader.upload(image, {
+          folder: "booking",
+        });
+        urls.push(url);
+      }
     }
 
     const response = await Booking.create({
       patientID: _id,
       scheduleID,
       time,
+      images: urls,
     });
     const bookings = await Booking.find({
       scheduleID,
@@ -138,7 +179,7 @@ const cancelBookingByPatient = asyncHandler(async (req, res) => {
     await Schedule.updateOne(
       {
         _id: booking.scheduleID,
-        timeType: { $elemMatch: alreadyTime },
+        timeType: { $elemMatch: { time: booking.time } },
       },
       {
         $set: {
@@ -155,6 +196,32 @@ const cancelBookingByPatient = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: false,
     message: `Không thể hủy lịch khám do bác sĩ đã xác nhận!!!`,
+  });
+});
+const updatePayment = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { id } = req.params;
+  const booking = await Booking.find({
+    _id: id,
+    patientID: _id,
+  });
+  if (booking) {
+    await Booking.findByIdAndUpdate(
+      id,
+      { isPaid: true },
+      {
+        new: true,
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Thanh toán thành công`,
+    });
+  }
+  return res.status(200).json({
+    success: false,
+    message: `Thanh toán thất bại`,
   });
 });
 
@@ -221,13 +288,34 @@ const deleteBooking = asyncHandler(async (req, res) => {
     data: response ? `Xóa thành công` : "Xóa thất bại",
   });
 });
+const deleteImageBooking = asyncHandler(async (req, res) => {
+  const { images } = req.body;
+  const { id } = req.params;
+  for (const image of images) {
+    const urlImage = image.split("/");
+    const img = urlImage[urlImage.length - 1];
+    const imgName = img.split(".")[0];
+    await cloudinary.uploader.destroy(imgName);
+  }
+  const updatedBooking = await Booking.findById(id);
+  const imagesNew = updatedBooking?.images?.filter(
+    (el1) => !images?.some((el2) => el1 === el2)
+  );
+  updatedBooking.images = imagesNew;
+  await updatedBooking.save();
+  return res.status(200).json({
+    success: true,
+    data: `Xóa ảnh thành công`,
+  });
+});
 
 module.exports = {
   getBookings,
-  getBookingsByPatientID,
   addBookingByPatient,
   cancelBookingByPatient,
   updateBooking,
   deleteBooking,
   addBooking,
+  deleteImageBooking,
+  updatePayment,
 };

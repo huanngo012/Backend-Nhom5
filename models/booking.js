@@ -15,6 +15,11 @@ var bookingSchema = new mongoose.Schema(
     description: {
       type: String,
     },
+    images: [
+      {
+        type: String,
+      },
+    ],
     scheduleID: {
       type: mongoose.Types.ObjectId,
       ref: "Schedule",

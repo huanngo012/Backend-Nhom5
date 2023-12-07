@@ -56,7 +56,7 @@ const getAllClinics = asyncHandler(async (req, res) => {
   const skip = (page - 1) * limit;
   queryCommand.skip(skip).limit(limit);
 
-  const response = await queryCommand.exec();
+  const response = await queryCommand.select("-ratings").exec();
   const counts = await Clinic.find(formatedQueries).countDocuments();
   return res.status(200).json({
     success: response.length > 0 ? true : false,
@@ -66,7 +66,15 @@ const getAllClinics = asyncHandler(async (req, res) => {
 });
 const getClinic = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const response = await Clinic.findById(id).populate("specialtyID");
+  const response = await Clinic.findById(id)
+    .populate("specialtyID")
+    .populate({
+      path: "ratings",
+      populate: {
+        path: "postedBy",
+        select: "fullName avatar",
+      },
+    });
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Bệnh viện không tồn tại",
@@ -121,7 +129,8 @@ const updateClinic = asyncHandler(async (req, res) => {
     const alreadyHost = await User.find({ _id: host, role: 2 });
     if (!alreadyHost) throw new Error("Người dùng không có quyền!!!");
   }
-  const response = await Clinic.findByIdAndUpdate(id, req.body, {
+  const { specialtyID, ...data } = req.body;
+  const response = await Clinic.findByIdAndUpdate(id, data, {
     new: true,
   });
   return res.status(200).json({
@@ -136,6 +145,42 @@ const deleteClinic = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: response ? true : false,
     data: response ? `Xóa thành công` : "Xóa thất bại",
+  });
+});
+
+const addSpecialtyClinic = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { specialtyID } = req.body;
+  const clinic = await Clinic.findById(id);
+  const notExistSpecialty = specialtyID?.filter(
+    (obj1) => !clinic.specialtyID?.some((obj2) => obj1 === obj2._id.toString())
+  );
+
+  const updateSpecialtys = clinic.specialtyID.concat(notExistSpecialty);
+
+  clinic.specialtyID = updateSpecialtys;
+  await clinic.save();
+
+  return res.status(200).json({
+    success: true,
+    data: `Thêm chuyên khoa của bệnh viện thành công`,
+  });
+});
+const deleteSpecialtyClinic = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { specialtyID } = req.body;
+  const clinic = await Clinic.findById(id);
+
+  const updateSpecialtys = clinic?.specialtyID?.filter(
+    (el) => !specialtyID?.some((el2) => el._id.toString() === el2)
+  );
+  clinic.specialtyID = updateSpecialtys;
+
+  await clinic.save();
+
+  return res.status(200).json({
+    success: true,
+    data: `Xóa chuyên khoa của bệnh viện thành công`,
   });
 });
 
@@ -222,4 +267,6 @@ module.exports = {
   deleteClinic,
   updateClinicByHost,
   ratingsClinic,
+  addSpecialtyClinic,
+  deleteSpecialtyClinic,
 };

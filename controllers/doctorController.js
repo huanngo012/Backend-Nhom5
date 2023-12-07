@@ -187,11 +187,6 @@ const getCountDoctor = asyncHandler(async (req, res) => {
 
 const addDoctor = asyncHandler(async (req, res) => {
   const { id, clinicID, specialtyID, description, roomID, position } = req.body;
-  const { _id, role } = req.user;
-  if (role == 3) {
-    const isHost = await Clinic.find({ _id: clinicID, host: _id });
-    if (!isHost) throw new Error("Bệnh viện này không thuộc quyền quản lý!!!");
-  }
 
   const user = await User.findById(id);
   const alreadyDotor = await Doctor.findById(id);
@@ -234,30 +229,22 @@ const addDoctor = asyncHandler(async (req, res) => {
 });
 const updateDoctor = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { _id, role } = req.user;
   const { specialtyID, clinicID, avatar } = req.body;
   if (Object.keys(req.body).length === 0)
     throw new Error("Vui lòng nhập đầy đủ");
   const doctor = await Doctor.findById(id).populate("clinicID");
-
-  if (role == 3) {
-    delete req.body?.clinicID;
-    if (doctor?.clinicID?.host !== _id)
-      throw new Error("Bệnh viện này không thuộc quyền quản lý!!!");
-  }
-
   if (specialtyID) {
     if (clinicID) {
       const clinic = await Clinic.findById(clinicID);
       const alreadySpecialty = clinic?.specialtyID?.find(
-        (el) => el === specialtyID
+        (el) => el.toString() === specialtyID
       );
       if (!alreadySpecialty) {
         throw new Error("Bệnh viện không tồn tại chuyên khoa này");
       }
     } else {
       const specialty = doctor?.clinicID?.specialtyID?.find(
-        (el) => el === specialtyID
+        (el) => el.toString() === specialtyID
       );
       if (!specialty) {
         throw new Error("Bệnh viện không tồn tại chuyên khoa này");
@@ -286,12 +273,6 @@ const updateDoctor = asyncHandler(async (req, res) => {
 });
 const deleteDoctor = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { _id, role } = req.user;
-  const doctor = await Doctor.findById(id);
-  if (role == 3) {
-    const isHost = await Clinic.find({ _id: doctor.clinicID, host: _id });
-    if (!isHost) throw new Error("Bệnh viện này không thuộc quyền quản lý!!!");
-  }
   const response = await Doctor.findByIdAndDelete(id);
   return res.status(200).json({
     success: response ? true : false,

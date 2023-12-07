@@ -1,5 +1,12 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
+const ObjectID = require("mongodb").ObjectId;
+const Booking = require("../models/booking");
+const Doctor = require("../models/doctor");
+const User = require("../models/user");
+const Clinic = require("../models/clinic");
+const Specialty = require("../models/specialty");
+const Schedule = require("../models/schedule");
 
 const verifyAccessToken = asyncHandler(async (req, res, next) => {
   // Bearer token
@@ -58,8 +65,68 @@ const isDoctor = asyncHandler((req, res, next) => {
     //doctoc
     return res.status(401).json({
       success: false,
-      mes: " Bạn không có quyền!!!",
+      mes: "Bạn không có quyền!!!",
     });
+  next();
+});
+
+const checkPermissionDoctor = asyncHandler(async (req, res, next) => {
+  const { role, _id } = req.user;
+  const { clinicID } = req.body;
+  const { id } = req.params;
+  if (role === 3) {
+    if (clinicID) {
+      const isHost = await Clinic.find({ _id: clinicID, host: _id });
+      if (!isHost) {
+        return res.status(401).json({
+          success: false,
+          mes: "Bạn không có quyền!!!",
+        });
+      }
+    } else {
+      const doctor = await Doctor.findById(id).populate("clinicID");
+      if (doctor?.clinicID?.host?.toString() !== _id.toString()) {
+        return res.status(401).json({
+          success: false,
+          mes: "Bạn không có quyền!!!",
+        });
+      }
+    }
+  }
+
+  next();
+});
+const checkPermissionBooking = asyncHandler(async (req, res, next) => {
+  const { role, _id } = req.user;
+  const { id } = req.params;
+  const booking = await Booking.findById(id).populate({
+    path: "scheduleID",
+    populate: {
+      path: "doctorID",
+      model: "Doctor",
+      select: "clinicID  _id",
+      populate: [
+        {
+          path: "clinicID",
+          model: "Clinic",
+          select: " host",
+        },
+      ],
+    },
+  });
+  if (
+    (role === 3 &&
+      _id.toString() !== booking?.scheduleID?.doctorID?._id?.toString()) ||
+    (role === 2 &&
+      _id.toString() !==
+        booking?.scheduleID?.doctorID?.clinicID?.host?.toString())
+  ) {
+    return res.status(401).json({
+      success: false,
+      mes: "Bạn không có quyền!!!",
+    });
+  }
+
   next();
 });
 
@@ -69,4 +136,6 @@ module.exports = {
   isHost,
   isDoctor,
   isAdminOrHost,
+  checkPermissionBooking,
+  checkPermissionDoctor,
 };

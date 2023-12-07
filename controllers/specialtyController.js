@@ -1,8 +1,6 @@
 const moment = require("moment");
 const Specialty = require("../models/specialty");
-const Clinic = require("../models/clinic");
 const asyncHandler = require("express-async-handler");
-const ObjectID = require("mongodb").ObjectId;
 const cloudinary = require("../config/cloudinary.config");
 
 const getAllSpecialtys = asyncHandler(async (req, res) => {
@@ -104,7 +102,9 @@ const updateSpecialty = asyncHandler(async (req, res) => {
   });
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Cập nhật thông tin chuyên khoa thất bại",
+    message: response
+      ? "Cập nhật thông tin chuyên khoa thành công"
+      : "Cập nhật thông tin chuyên khoa thất bại",
   });
 });
 const deleteSpecialty = asyncHandler(async (req, res) => {
@@ -112,9 +112,9 @@ const deleteSpecialty = asyncHandler(async (req, res) => {
   const response = await Specialty.findByIdAndDelete(id);
   return res.status(200).json({
     success: response ? true : false,
-    data: response
-      ? `Xóa chuyên khoa ${response.name} thành công`
-      : "Xóa thất bại",
+    message: response
+      ? `Xóa chuyên khoa thành công`
+      : "Xóa chuyên khoa thất bại",
   });
 });
 
