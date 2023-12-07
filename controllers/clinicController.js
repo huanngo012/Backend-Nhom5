@@ -98,7 +98,7 @@ const getCountClinic = asyncHandler(async (req, res) => {
 });
 
 const addClinic = asyncHandler(async (req, res) => {
-  const { name, address, image, host } = req.body;
+  const { name, address, image, host, descriptionImg } = req.body;
   if (!name || !address || !host) throw new Error("Vui lòng nhập đầy đủ");
   const alreadyHost = await User.find({ _id: host, role: 2 });
   if (!alreadyHost) throw new Error("Người dùng không có quyền!!!");
@@ -107,6 +107,16 @@ const addClinic = asyncHandler(async (req, res) => {
       folder: "booking",
     });
     req.body.image = url;
+  }
+  let urls = [];
+  if (descriptionImg) {
+    for (const image of descriptionImg) {
+      const { url } = await cloudinary.uploader.upload(image, {
+        folder: "booking",
+      });
+      urls.push(url);
+    }
+    req.body.descriptionImg = urls;
   }
   const response = await Clinic.create(req.body);
   return res.status(200).json({
@@ -257,6 +267,26 @@ const ratingsClinic = asyncHandler(async (req, res) => {
     data: `Đánh giá thành công`,
   });
 });
+const deleteImageClinic = asyncHandler(async (req, res) => {
+  const { descriptionImg } = req.body;
+  const { id } = req.params;
+  for (const image of descriptionImg) {
+    const urlImage = image.split("/");
+    const img = urlImage[urlImage.length - 1];
+    const imgName = img.split(".")[0];
+    await cloudinary.uploader.destroy(imgName);
+  }
+  const updatedClinic = await Clinic.findById(id);
+  const descriptionImgNew = updatedClinic?.descriptionImg?.filter(
+    (el1) => !descriptionImg?.some((el2) => el1 === el2)
+  );
+  updatedClinic.descriptionImg = descriptionImgNew;
+  await updatedClinic.save();
+  return res.status(200).json({
+    success: true,
+    data: `Xóa ảnh thành công`,
+  });
+});
 
 module.exports = {
   getAllClinics,
@@ -269,4 +299,5 @@ module.exports = {
   ratingsClinic,
   addSpecialtyClinic,
   deleteSpecialtyClinic,
+  deleteImageClinic,
 };
