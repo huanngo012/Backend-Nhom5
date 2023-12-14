@@ -4,9 +4,11 @@ const {
   verifyAccessToken,
   isAdminOrHost,
   checkPermissionDoctor,
+  isHost,
 } = require("../middlewares/verifyToken");
 
 router.get("/", ctrls.getAllDoctors);
+router.get("/host", [verifyAccessToken, isHost], ctrls.getAllDoctorsByHost);
 router.get("/count", ctrls.getCountDoctor);
 router.get("/:id", ctrls.getDoctor);
 router.put("/rating", [verifyAccessToken], ctrls.ratingsDoctor);

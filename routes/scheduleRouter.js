@@ -4,6 +4,7 @@ const {
   verifyAccessToken,
   isAdminOrHost,
   isDoctor,
+  isHost,
 } = require("../middlewares/verifyToken");
 
 router.get(
@@ -12,6 +13,7 @@ router.get(
   ctrls.getSchedulesOfDoctor
 );
 router.get("/doctor/:id", [verifyAccessToken], ctrls.getSchedulesByDoctorID);
+router.get("/host", [verifyAccessToken, isHost], ctrls.getSchedulesByHost);
 
 router.get("/", ctrls.getSchedules);
 router.get("/:id", ctrls.getSchedule);

@@ -24,31 +24,33 @@ const getBookings = asyncHandler(async (req, res) => {
     formatedQueries.patientID = _id;
   }
 
-  const queryCommand = Booking.find(formatedQueries).populate({
-    path: "scheduleID",
-    populate: {
-      path: "doctorID",
-      model: "Doctor",
-      select: { ratings: 0 },
-      populate: [
-        {
-          path: "clinicID",
-          model: "Clinic",
-          select: { specialtyID: 0, ratings: 0 },
-          match: role === 2 ? { host: new ObjectID(_id) } : {},
-        },
-        {
-          path: "specialtyID",
-          model: "Specialty",
-        },
-        {
-          path: "_id",
-          model: "User",
-          match: role === 3 ? { _id: new ObjectID(_id) } : {},
-        },
-      ],
-    },
-  });
+  const queryCommand = Booking.find(formatedQueries)
+    .populate({
+      path: "scheduleID",
+      populate: {
+        path: "doctorID",
+        model: "Doctor",
+        select: { ratings: 0 },
+        populate: [
+          {
+            path: "clinicID",
+            model: "Clinic",
+            select: { specialtyID: 0, ratings: 0 },
+            match: role === 2 ? { host: new ObjectID(_id) } : {},
+          },
+          {
+            path: "specialtyID",
+            model: "Specialty",
+          },
+          {
+            path: "_id",
+            model: "User",
+            match: role === 3 ? { _id: new ObjectID(_id) } : {},
+          },
+        ],
+      },
+    })
+    .populate("patientID");
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
     queryCommand = queryCommand.sort(sortBy);
@@ -65,8 +67,9 @@ const getBookings = asyncHandler(async (req, res) => {
   queryCommand.skip(skip).limit(limit);
 
   const response = await queryCommand.exec();
-
-  let newResponse = response.filter((el) => el?.scheduleID?.doctorID !== null);
+  let newResponse = response.filter(
+    (el) => el?.scheduleID?.doctorID?.clinicID !== null
+  );
   const counts = newResponse?.length;
 
   return res.status(200).json({
@@ -227,7 +230,7 @@ const updatePayment = asyncHandler(async (req, res) => {
 
 //ADMIN
 const addBooking = asyncHandler(async (req, res) => {
-  const { scheduleID, time, patientID } = req.body;
+  const { scheduleID, time, patientID, images } = req.body;
   if (!scheduleID || !time || !patientID)
     throw new Error("Vui lòng nhập đầy đủ");
   const alreadyUser = await User.findById(patientID);
@@ -246,46 +249,79 @@ const addBooking = asyncHandler(async (req, res) => {
       "Thời gian khám bệnh trong ngày không tồn tại hoặc đã kín lịch"
     );
   }
-  const bookings = Booking.find({
-    scheduleID,
-    time,
-    status: { $ne: "Đã hủy" },
-  });
-  if (bookings.length >= alreadyTime.maxNumber) {
-    throw new Error("Đã kín giờ khám này");
+  let urls = [];
+  if (images) {
+    for (const image of images) {
+      const { url } = await cloudinary.uploader.upload(image, {
+        folder: "booking",
+      });
+      urls.push(url);
+    }
   }
   const response = await Booking.create({
     patientID,
     scheduleID,
     time,
+    images: urls,
   });
+  const bookings = await Booking.find({
+    scheduleID,
+    time,
+    status: { $ne: "Đã hủy" },
+  });
+  if (bookings.length === alreadyTime.maxNumber) {
+    await Schedule.updateOne(
+      {
+        _id: scheduleID,
+        timeType: { $elemMatch: alreadyTime },
+      },
+      {
+        $set: {
+          "timeType.$.full": true,
+        },
+      },
+      { new: true }
+    );
+  }
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Đặt lịch thất bại",
+    message: response ? "Đặt lịch thành công" : "Đặt lịch thất bại",
   });
 });
 const updateBooking = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  if (!req.body.status) throw new Error("Vui lòng nhập đầy đủ");
   const response = await Booking.findByIdAndUpdate(
     id,
-    { status: req.body.status, description: req?.body?.description },
+    {
+      status: req.body.status,
+      description: req?.body?.description,
+      isPaid: req?.body?.isPaid,
+    },
     {
       new: true,
     }
   );
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Cập nhật trạng thái lịch khám thất bại",
+    message: response
+      ? "Cập nhật trạng thái lịch khám thành công"
+      : "Cập nhật trạng thái lịch khám thất bại",
   });
 });
 
 const deleteBooking = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const response = await Booking.findByIdAndDelete(id);
+
+  for (const image of response?.images) {
+    const urlImage = image.split("/");
+    const img = urlImage[urlImage.length - 1];
+    const imgName = img.split(".")[0];
+    await cloudinary.uploader.destroy(`booking/${imgName}`);
+  }
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? `Xóa thành công` : "Xóa thất bại",
+    message: response ? `Xóa thành công` : "Xóa thất bại",
   });
 });
 const deleteImageBooking = asyncHandler(async (req, res) => {

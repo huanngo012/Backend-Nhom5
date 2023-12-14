@@ -42,7 +42,10 @@ const getSchedules = asyncHandler(async (req, res) => {
     delete formatedQueries?.endDate;
   }
   if (queries?.date) {
-    formatedQueries.date = new Date(+queries.date);
+    const newDate = new Date(+queries.date);
+    newDate.setHours(7, 0, 0, 0);
+    newDate.setDate(newDate.getDate());
+    formatedQueries.date = new Date(newDate);
   }
   if (queries?.timeType) {
     const timeArr = queries?.timeType.split(",");
@@ -53,7 +56,7 @@ const getSchedules = asyncHandler(async (req, res) => {
     });
     formatedQueries.timeType = { $or: timeArr };
   }
-  console.log(formatedQueries);
+
   let queryCommand = Schedule.find(formatedQueries).populate({
     path: "doctorID",
     model: "Doctor",
@@ -149,6 +152,146 @@ const getSchedulesOfDoctor = asyncHandler(async (req, res) => {
     data: response
       ? response
       : "Lấy danh sách lịch khám bệnh của bác sĩ thất bại",
+  });
+});
+
+const getSchedulesByHost = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  let nameSpecialty;
+  let nameClinic;
+  const queries = { ...req.query };
+  const exludeFields = ["limit", "sort", "page", "fields"];
+  exludeFields.forEach((el) => delete queries[el]);
+  let queryString = JSON.stringify(queries);
+  queryString = queryString.replace(
+    /\b(gte|gt|lt|lte)\b/g,
+    (macthedEl) => `$${macthedEl}`
+  );
+  const formatedQueries = JSON.parse(queryString);
+
+  if (queries?.doctorID) {
+    formatedQueries.doctorID = new ObjectID(queries.doctorID);
+  }
+
+  if (queries?.nameSpecialty) {
+    nameSpecialty = queries?.nameSpecialty;
+    delete formatedQueries?.nameSpecialty;
+  }
+
+  if (queries?.nameClinic) {
+    nameClinic = queries?.nameClinic;
+    delete formatedQueries?.nameClinic;
+  }
+
+  if (queries?.startDate && queries?.endDate) {
+    const start = new Date(+queries?.startDate);
+    const end = new Date(+queries?.endDate);
+    formatedQueries.date = {
+      $gte: start,
+      $lte: end,
+    };
+    delete formatedQueries?.startDate;
+    delete formatedQueries?.endDate;
+  }
+  if (queries?.date) {
+    const newDate = new Date(+queries.date);
+    newDate.setHours(7, 0, 0, 0);
+    newDate.setDate(newDate.getDate());
+    formatedQueries.date = new Date(newDate);
+  }
+  if (queries?.timeType) {
+    const timeArr = queries?.timeType.split(",");
+    timeArr?.forEach((item, index, array) => {
+      array[index] = {
+        "timeType.time": item,
+      };
+    });
+    formatedQueries.timeType = { $or: timeArr };
+  }
+
+  let queryCommand = Schedule.find(formatedQueries).populate({
+    path: "doctorID",
+    model: "Doctor",
+    populate: [
+      {
+        path: "_id",
+        model: "User",
+        select: { __v: 0, password: 0, createdAt: 0, updatedAt: 0, role: 0 },
+      },
+      {
+        path: "specialtyID",
+        model: "Specialty",
+        match: nameSpecialty
+          ? { name: { $regex: nameSpecialty, $options: "i" } }
+          : {},
+      },
+      {
+        path: "clinicID",
+        model: "Clinic",
+        match: nameClinic
+          ? {
+              name: { $regex: nameClinic, $options: "i" },
+              host: new ObjectID(_id),
+            }
+          : {
+              host: new ObjectID(_id),
+            },
+        select: {
+          specialtyID: 0,
+          address: 0,
+          image: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          __v: 0,
+        },
+      },
+    ],
+  });
+
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(",").join(" ");
+    queryCommand = queryCommand.sort(sortBy);
+  }
+
+  if (req.query.fields) {
+    const fields = req.query.fields.split(",").join(" ");
+    queryCommand = queryCommand.select(fields);
+  }
+
+  const page = +req.query.page || 1;
+  const limit = +req.query.limit || process.env.LIMIT;
+  const skip = (page - 1) * limit;
+  queryCommand.skip(skip).limit(limit);
+
+  let response = await queryCommand.exec();
+
+  let newResponse = response.filter(
+    (el) =>
+      el?.doctorID?.specialtyID !== null && el?.doctorID?.clinicID !== null
+  );
+
+  const schedules = await Schedule.find(formatedQueries).populate({
+    path: "doctorID",
+    model: "Doctor",
+    populate: [
+      {
+        path: "clinicID",
+        model: "Clinic",
+        match: { host: new ObjectID(_id) },
+      },
+    ],
+  });
+  let counts = schedules.filter(
+    (el) =>
+      el?.doctorID?.specialtyID !== null && el?.doctorID?.clinicID !== null
+  ).length;
+  return res.status(200).json({
+    success: newResponse.length > 0 ? true : false,
+    data:
+      newResponse.length > 0
+        ? newResponse
+        : "Lấy danh sách lịch khám bệnh của các bác sĩ thất bại",
+    counts,
   });
 });
 
@@ -250,4 +393,5 @@ module.exports = {
   addSchedule,
   deleteSchedule,
   updateSchedule,
+  getSchedulesByHost,
 };

@@ -1,6 +1,10 @@
 const router = require("express").Router();
 const ctrls = require("../controllers/userController");
-const { verifyAccessToken, isAdmin } = require("../middlewares/verifyToken");
+const {
+  verifyAccessToken,
+  isAdmin,
+  isAdminOrHost,
+} = require("../middlewares/verifyToken");
 
 router.post("/register", ctrls.register);
 router.post("/login", ctrls.login);
@@ -14,7 +18,7 @@ router.get("/count-patient", ctrls.getCountPatient);
 
 //ADMIN
 //CRUD
-router.get("/", [verifyAccessToken, isAdmin], ctrls.getUsers);
+router.get("/", [verifyAccessToken, isAdminOrHost], ctrls.getUsers);
 router.post("/", [verifyAccessToken, isAdmin], ctrls.addUserByAdmin);
 router.get("/:id", ctrls.getUser);
 router.put("/:id", [verifyAccessToken, isAdmin], ctrls.updateUserByAdmin);

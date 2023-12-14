@@ -24,7 +24,5 @@ router.put("/rating", [verifyAccessToken], ctrls.ratingsClinic);
 router.post("/", [verifyAccessToken, isAdmin], ctrls.addClinic);
 router.put("/:id", [verifyAccessToken, isAdmin], ctrls.updateClinic);
 router.delete("/:id", [verifyAccessToken, isAdmin], ctrls.deleteClinic);
-router.put("/delete-img/:id", verifyAccessToken, ctrls.deleteImageClinic);
-router.put("/host/:id", [verifyAccessToken, isHost], ctrls.updateClinicByHost);
 
 module.exports = router;

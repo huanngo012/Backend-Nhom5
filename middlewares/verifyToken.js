@@ -42,7 +42,7 @@ const isAdmin = asyncHandler((req, res, next) => {
 const isHost = asyncHandler((req, res, next) => {
   const { role } = req.user;
   if (role !== 2)
-    //admin
+    //host
     return res.status(401).json({
       success: false,
       mes: "Bạn không có quyền!!!",

@@ -2,6 +2,7 @@ const express = require("express");
 require("dotenv").config();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const bodyParser = require("body-parser");
 //
 const dbConnect = require("./config/dbconnect");
 const initRoutes = require("./routes");
@@ -37,8 +38,15 @@ app.use(
 );
 
 //image
-app.use(express.json({ limit: "300mb" }));
-app.use(express.urlencoded({ extended: true, limit: "300mb" }));
+
+app.use(bodyParser.json({ limit: "500mb" }));
+app.use(
+  bodyParser.urlencoded({
+    limit: "500mb",
+    extended: true,
+    parameterLimit: 50000,
+  })
+);
 
 //database
 dbConnect();
