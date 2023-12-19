@@ -16,6 +16,9 @@ const swaggerUi = require("swagger-ui-express");
 
 const port = process.env.PORT || 8888;
 
+//database
+dbConnect();
+
 const app = express();
 app.use(
   cors({
@@ -25,6 +28,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.json({ length: 52428800 }));
 
 app.get("/", (req, res) => {
   res.send("Server is running...");
@@ -38,18 +42,6 @@ app.use(
 );
 
 //image
-
-app.use(bodyParser.json({ limit: "500mb" }));
-app.use(
-  bodyParser.urlencoded({
-    limit: "500mb",
-    extended: true,
-    parameterLimit: 50000,
-  })
-);
-
-//database
-dbConnect();
 
 //routes
 initRoutes(app);

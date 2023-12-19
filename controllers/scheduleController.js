@@ -56,10 +56,12 @@ const getSchedules = asyncHandler(async (req, res) => {
     });
     formatedQueries.timeType = { $or: timeArr };
   }
+  const fields = req?.query?.fields?.split(",").join(" ");
 
   let queryCommand = Schedule.find(formatedQueries).populate({
     path: "doctorID",
     model: "Doctor",
+    select: `${fields ? fields : ""}`,
     populate: [
       {
         path: "_id",
