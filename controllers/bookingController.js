@@ -67,9 +67,8 @@ const getBookings = asyncHandler(async (req, res) => {
   queryCommand.skip(skip).limit(limit);
 
   const response = await queryCommand.exec();
-  let newResponse = response.filter(
-    (el) => el?.scheduleID?.doctorID?.clinicID !== null
-  );
+
+  let newResponse = response.filter((el) => el?.scheduleID?.doctorID !== null);
   const counts = newResponse?.length;
 
   return res.status(200).json({
@@ -153,7 +152,7 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
     }
     return res.status(200).json({
       success: response ? true : false,
-      data: response ? response : "Đặt lịch thất bại",
+      message: response ? "Đặt lịch thành công" : "Đặt lịch thất bại",
     });
   } else {
     return res.status(401).json({
