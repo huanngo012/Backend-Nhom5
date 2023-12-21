@@ -165,12 +165,14 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
 const cancelBookingByPatient = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const { id } = req.params;
+
   const booking = await Booking.find({
     _id: id,
     status: "Đang xử lý",
     patientID: _id,
   });
-  if (booking) {
+
+  if (booking?.length > 0) {
     await Booking.findByIdAndUpdate(
       id,
       { status: "Đã hủy" },
@@ -197,7 +199,7 @@ const cancelBookingByPatient = asyncHandler(async (req, res) => {
   }
   return res.status(200).json({
     success: false,
-    message: `Không thể hủy lịch khám do bác sĩ đã xác nhận!!!`,
+    message: `Không thể hủy lịch khám do bạn không có quyền hoặc bác sĩ đã xác nhận!!!`,
   });
 });
 const updatePayment = asyncHandler(async (req, res) => {
