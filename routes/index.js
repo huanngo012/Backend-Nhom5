@@ -1,5 +1,6 @@
 const { notFound, errHandler } = require("../middlewares/errHandler");
 const userRouter = require("./userRouter");
+const patientRouter = require("./patientRouter");
 const doctorRouter = require("./doctorRouter");
 const clinicRouter = require("./clinicRouter");
 const specialtyRouter = require("./specialtyRouter");
@@ -8,6 +9,7 @@ const bookingRouter = require("./bookingRouter");
 
 const initRoutes = (app) => {
   app.use("/api/user", userRouter);
+  app.use("/api/patient", patientRouter);
   app.use("/api/doctor", doctorRouter);
   app.use("/api/clinic", clinicRouter);
   app.use("/api/specialty", specialtyRouter);

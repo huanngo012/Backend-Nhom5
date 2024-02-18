@@ -16,7 +16,12 @@ const getAllClinics = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
-  if (queries?.name) {
+  Object.keys(formatedQueries).forEach((key) => {
+    if (!formatedQueries[key]) {
+      delete formatedQueries[key];
+    }
+  });
+  if (queries?.name && queries?.name.trim() !== "") {
     formatedQueries.name = { $regex: queries.name, $options: "i" };
   }
   if (queries?.host) {
@@ -64,7 +69,7 @@ const getAllClinics = asyncHandler(async (req, res) => {
   const counts = await Clinic.find(formatedQueries).countDocuments();
   return res.status(200).json({
     success: response.length > 0 ? true : false,
-    data: response.length > 0 ? response : "Lấy danh sách bệnh viện thất bại",
+    data: response,
     counts,
   });
 });
@@ -200,7 +205,7 @@ const deleteClinic = asyncHandler(async (req, res) => {
   }
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? `Xóa thành công` : "Xóa thất bại",
+    message: response ? `Xóa thành công` : "Xóa thất bại",
   });
 });
 
@@ -219,7 +224,7 @@ const addSpecialtyClinic = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    data: `Thêm chuyên khoa của bệnh viện thành công`,
+    message: `Thêm chuyên khoa của bệnh viện thành công`,
   });
 });
 const deleteSpecialtyClinic = asyncHandler(async (req, res) => {
@@ -236,7 +241,7 @@ const deleteSpecialtyClinic = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    data: `Xóa chuyên khoa của bệnh viện thành công`,
+    message: `Xóa chuyên khoa của bệnh viện thành công`,
   });
 });
 
@@ -282,7 +287,27 @@ const ratingsClinic = asyncHandler(async (req, res) => {
   await updatedClinic.save();
   return res.status(200).json({
     success: true,
-    data: `Đánh giá thành công`,
+    message: `Đánh giá thành công`,
+  });
+});
+
+const deleteRatingClinic = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { id } = req.params;
+
+  const clinic = await Clinic.findById(id);
+  clinic.ratings = clinic?.ratings?.filter(
+    (el) => el.postedBy.toString() !== _id
+  );
+
+  const ratingCount = clinic.ratings.length;
+  const sum = clinic.ratings.reduce((sum, el) => sum + +el.star, 0);
+
+  clinic.totalRatings = Math.round((sum * 10) / ratingCount) / 10;
+  await clinic.save();
+  return res.status(200).json({
+    success: true,
+    message: `Xóa đánh giá thành công`,
   });
 });
 
@@ -294,6 +319,7 @@ module.exports = {
   updateClinic,
   deleteClinic,
   ratingsClinic,
+  deleteRatingClinic,
   addSpecialtyClinic,
   deleteSpecialtyClinic,
 };

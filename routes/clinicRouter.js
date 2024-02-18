@@ -21,6 +21,7 @@ router.put(
   ctrls.deleteSpecialtyClinic
 );
 router.put("/rating", [verifyAccessToken], ctrls.ratingsClinic);
+router.delete("/rating/:id", [verifyAccessToken], ctrls.deleteRatingClinic);
 router.post("/", [verifyAccessToken, isAdmin], ctrls.addClinic);
 router.put("/:id", [verifyAccessToken, isAdmin], ctrls.updateClinic);
 router.delete("/:id", [verifyAccessToken, isAdmin], ctrls.deleteClinic);

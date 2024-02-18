@@ -9,23 +9,23 @@ var clinicSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    logo: {
+      type: String,
+    },
     address: {
       province: String,
       district: String,
       ward: String,
       detail: String,
     },
-    description: {
-      type: String,
-    },
-    image: {
-      type: String,
-    },
-    descriptionImg: [
+    images: [
       {
         type: String,
       },
     ],
+    description: {
+      type: String,
+    },
     specialtyID: [{ type: mongoose.Types.ObjectId, ref: "Specialty" }],
     host: { type: mongoose.Types.ObjectId, ref: "User" },
     ratings: [

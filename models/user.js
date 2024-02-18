@@ -17,19 +17,9 @@ var userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    mobile: {
-      type: String,
-      required: true,
-      unique: true,
-    },
     avatar: {
       type: String,
     },
-    gender: {
-      type: String,
-      enum: ["MALE", "FEMALE"],
-    },
-
     address: {
       type: String,
       default: "",
@@ -42,7 +32,24 @@ var userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    //
     refreshToken: {
+      type: String,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailToken: {
+      type: String,
+    },
+    emailTokenExpires: {
+      type: String,
+    },
+    passwordResetToken: {
+      type: String,
+    },
+    passwordResetExpires: {
       type: String,
     },
   },
@@ -61,6 +68,18 @@ userSchema.pre("save", async function (next) {
 userSchema.methods = {
   isCorrectPassword: async function (password) {
     return await bcryptjs.compare(password, this.password);
+  },
+  createEmailToken: function () {
+    const token = crypto.randomBytes(32).toString("hex");
+    this.emailToken = crypto.createHash("sha256").update(token).digest("hex");
+    this.emailTokenExpires = Date.now() + 15 * 60 * 1000;
+    return token;
+  },
+  createPassworChangedToken: function () {
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    this.passwordResetToken = otp;
+    this.passwordResetExpires = Date.now() + 15 * 60 * 1000;
+    return otp;
   },
 };
 //Export the model

@@ -117,10 +117,7 @@ const getSchedules = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: newResponse.length > 0 ? true : false,
-    data:
-      newResponse.length > 0
-        ? newResponse
-        : "Lấy danh sách lịch khám bệnh của các bác sĩ thất bại",
+    data: newResponse,
     counts,
   });
 });

@@ -20,15 +20,25 @@ const port = process.env.PORT || 8888;
 dbConnect();
 
 const app = express();
+
+const allowedOrigins = [
+  "http://localhost:3000", // Client URL
+  "192.168.1.67:3000", // Client URL
+  process.env.CLIENT_URL, // Admin URL
+];
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: allowedOrigins,
     methods: ["POST", "PUT", "GET", "DELETE"],
+    credentials: true,
+    cookie: {
+      domain: "localhost",
+    },
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.json({ length: 52428800 }));
 
 app.get("/", (req, res) => {
   res.send("Server is running...");

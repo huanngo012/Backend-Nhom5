@@ -5,21 +5,22 @@ var bookingSchema = new mongoose.Schema(
   {
     patientID: {
       type: mongoose.Types.ObjectId,
-      ref: "User",
-    },
-    status: {
-      type: String,
-      default: "Đang xử lý",
-      enum: ["Đã hủy", "Đang xử lý", "Đã xác nhận", "Đã khám", "Bỏ khám"],
+      ref: "Patient",
     },
     description: {
       type: String,
     },
-    images: [
+    descriptionImg: [
       {
         type: String,
       },
     ],
+    status: {
+      type: String,
+      default: "pending",
+      enum: ["cancelled", "pending", "confirmed", "examined", "leaved"],
+    },
+
     scheduleID: {
       type: mongoose.Types.ObjectId,
       ref: "Schedule",
@@ -27,6 +28,9 @@ var bookingSchema = new mongoose.Schema(
     time: {
       type: String,
       required: true,
+    },
+    result: {
+      type: String,
     },
     qr_code: {
       type: String,

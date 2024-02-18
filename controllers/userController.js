@@ -9,22 +9,87 @@ const {
 const jwt = require("jsonwebtoken");
 const bcryptjs = require("bcryptjs");
 const cloudinary = require("../config/cloudinary.config");
+const sendMail = require("../utils/sendMail");
+const crypto = require("crypto");
 
 const register = asyncHandler(async (req, res) => {
-  const { email, password, fullName, mobile, gender } = req.body;
-  if (!email || !password || !fullName || !mobile || !gender)
+  const { email, password, fullName } = req.body;
+  if (!email || !password || !fullName)
     return res.status(400).json({
       success: false,
       message: "Vui lòng nhập đầy đủ",
     });
-  const user = await User.findOne({ email });
-  if (user) {
+  const user = await User.findOne({
+    email,
+  });
+  if (user && user?.isVerified) {
     throw new Error("Tài khoản đã tồn tại");
+  } else if (user && user?.emailTokenExpires > Date.now()) {
+    throw new Error("Vui lòng xác thực email");
   } else {
-    const newUser = await User.create(req.body);
+    if (user) {
+      const salt = bcryptjs.genSaltSync(10);
+      req.body.password = await bcryptjs.hash(req.body.password, salt);
+    }
+    const newUser = user
+      ? await User.findByIdAndUpdate(user._id, req.body, { new: true })
+      : await User.create(req.body);
+    const token = newUser.createEmailToken();
+    await newUser.save();
+    const html = `Xin vui lòng click vào đây để xác thực email <a href=${process.env.URL_SERVER}/api/user/verify-email/${token}> Click here</a>`;
+    const data = {
+      email: email,
+      subject: "Xác thực email",
+      html,
+    };
+    await sendMail(data);
+
     return res.status(200).json({
       success: newUser ? true : false,
-      message: newUser ? "Đăng ký thành công" : "Đăng ký thất bại",
+      message: newUser
+        ? "Đăng ký thành công. Vui lòng xác thực qua email !!!"
+        : "Đăng ký thất bại",
+    });
+  }
+});
+
+const sendMailVerifyEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("Email không tồn tại");
+  const token = user.createEmailToken();
+  await user.save();
+  const html = `Xin vui lòng click vào đây để xác thực email <a href=${process.env.URL_SERVER}/api/user/verify-email/${token}> Click here</a>`;
+  const data = {
+    email: email,
+    subject: "Xác thực email",
+    html,
+  };
+  const rs = await sendMail(data);
+  return res.status(200).json({
+    success: true,
+    message: "Gửi email xác thực thành công",
+  });
+});
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const emailToken = crypto.createHash("sha256").update(token).digest("hex");
+  const user = await User.findOne({
+    emailToken,
+    emailTokenExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    throw new Error("Email xác thực hết hạn");
+  } else {
+    user.emailToken = undefined;
+    user.emailTokenExpires = undefined;
+    user.isVerified = true;
+    await user.save();
+
+    return res.status(200).json({
+      success: user ? true : false,
+      message: user ? "Xác thực thành công" : "Xác thực thất bại",
     });
   }
 });
@@ -36,11 +101,15 @@ const login = asyncHandler(async (req, res) => {
       success: false,
       message: "Vui lòng nhập đầy đủ",
     });
-  const response = await User.findOne({ email });
+  const response = await User.findOne({ email, isVerified: true });
+  if (!response) throw new Error("Email không tồn tại");
+
   if (response && (await response.isCorrectPassword(password))) {
-    const { password, isBlocked, refreshToken, ...userData } =
-      response.toObject();
-    const accessToken = generateAccessToken(response._id, response.role);
+    const accessToken = generateAccessToken(
+      response._id,
+      response.role,
+      response.email
+    );
     // Tạo refresh token
     const newRefreshToken = generateRefreshToken(response._id);
     // Lưu refresh token vào database
@@ -53,12 +122,20 @@ const login = asyncHandler(async (req, res) => {
     res.cookie("refreshToken", newRefreshToken, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: true,
+      sameSite: "None",
     });
     res.setHeader("Authorization", `Bearer ${accessToken}`);
     return res.status(200).json({
       success: true,
       accessToken,
-      data: userData,
+      data: {
+        fullName: response.fullName,
+        email: response.email,
+        avatar: response.avatar,
+        address: response.address,
+        role: response.role,
+      },
     });
   } else {
     throw new Error("Tài khoản hoặc mật khẩu không trùng khớp!");
@@ -99,10 +176,84 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   if (!response) {
     throw new Error("RefreshToken không trùng khớp");
   }
-  res.setHeader("Authorization", `Bearer ${accessToken}`);
+  const newRefreshToken = generateRefreshToken(response._id);
+  response.refreshToken = newRefreshToken;
+  await response.save();
+
+  res.cookie("refreshToken", newRefreshToken, {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: true,
+    sameSite: "None",
+  });
   return res.status(200).json({
     success: true,
-    accessToken,
+    accessToken: generateAccessToken(
+      response._id,
+      response.role,
+      response.email
+    ),
+  });
+});
+
+const sendMailResetPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("Email không tồn tại");
+  const otp = user.createPassworChangedToken();
+  await user.save();
+  const html = `OTP: ${otp}`;
+  const data = {
+    email: email,
+    subject: "Reset Password",
+    html,
+  };
+  await sendMail(data);
+  return res.status(200).json({
+    success: true,
+    message: "Gửi email xác thực thành công",
+  });
+});
+
+const verifyResetPassword = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  const user = await User.findOne({
+    email,
+    passwordResetToken: otp,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+  if (!user) {
+    throw new Error("Mã xác thực không trùng khớp hoặc hết hạn");
+  } else {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+    const tokenResetPassword = generateAccessToken(
+      user._id,
+      user.role,
+      user.email
+    );
+    return res.status(200).json({
+      success: true,
+      message: "Xác thực thành công",
+      tokenResetPassword,
+    });
+  }
+});
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  const rs = await jwt.verify(token, process.env.JWT_SECRET);
+  const user = await User.findOne({
+    _id: rs._id,
+  });
+  if (!user) {
+    throw new Error("Yêu cầu đổi mật khẩu hết hạn");
+  }
+  user.password = password;
+  await user.save();
+  return res.status(200).json({
+    success: true,
+    message: "Đổi mật khẩu thành công",
   });
 });
 
@@ -120,10 +271,14 @@ const updateUser = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   if (!_id || Object.keys(req.body).length === 0)
     throw new Error("Vui lòng nhập đầy đủ");
-  const { password, avatar } = req.body;
+  const user = await User.findById(_id);
+  if (!user) throw new Error("Tài khoản không tồn tại");
+  const { password, newPassword, avatar } = req.body;
   if (password) {
+    const isMatch = await user.isCorrectPassword(password);
+    if (!isMatch) throw new Error("Mật khẩu cũ không trùng khớp");
     const salt = bcryptjs.genSaltSync(10);
-    req.body.password = await bcryptjs.hash(password, salt);
+    req.body.password = await bcryptjs.hash(newPassword, salt);
   }
   if (avatar) {
     const { url } = await cloudinary.uploader.upload(avatar, {
@@ -317,4 +472,9 @@ module.exports = {
   addUserByAdmin,
   updateUserByAdmin,
   deleteUser,
+  sendMailVerifyEmail,
+  verifyEmail,
+  sendMailResetPassword,
+  verifyResetPassword,
+  resetPassword,
 };

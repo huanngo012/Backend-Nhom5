@@ -13,6 +13,11 @@ router.post("/logout", ctrls.logout);
 router.get("/current", [verifyAccessToken], ctrls.getCurrent);
 router.put("/current", [verifyAccessToken], ctrls.updateUser);
 router.post("/refreshtoken", ctrls.refreshAccessToken);
+router.post("/send-verify-email", ctrls.sendMailVerifyEmail);
+router.get("/verify-email/:token", ctrls.verifyEmail);
+router.post("/send-reset-password", ctrls.sendMailResetPassword);
+router.post("/verify-reset-password", ctrls.verifyResetPassword);
+router.post("/reset-password", ctrls.resetPassword);
 
 router.get("/count-patient", ctrls.getCountPatient);
 
