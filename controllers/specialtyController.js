@@ -2,6 +2,7 @@ const moment = require("moment");
 const Specialty = require("../models/specialty");
 const asyncHandler = require("express-async-handler");
 const cloudinary = require("../config/cloudinary.config");
+const convertStringToRegexp = require("../utils/helper");
 
 const getAllSpecialtys = asyncHandler(async (req, res) => {
   const queries = { ...req.query };
