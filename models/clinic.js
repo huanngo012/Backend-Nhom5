@@ -1,4 +1,6 @@
 const mongoose = require("mongoose"); // Erase if already required
+const ObjectID = require("mongodb").ObjectId;
+const convertStringToRegexp = require("../utils/helper");
 
 // Declare the Schema of the Mongo model
 var clinicSchema = new mongoose.Schema(
@@ -41,9 +43,7 @@ var clinicSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 //Export the model

@@ -13,9 +13,13 @@ const getAllSpecialtys = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
-  if (queries?.name) {
-    formatedQueries.name = { $regex: queries.name, $options: "i" };
+
+  if (queries.name) {
+    formatedQueries.name = {
+      $regex: convertStringToRegexp(queries.name.trim()),
+    };
   }
+
   let queryCommand = Specialty.find(formatedQueries);
 
   if (req.query.sort) {

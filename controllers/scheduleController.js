@@ -3,6 +3,7 @@ const Booking = require("../models/booking");
 const Doctor = require("../models/doctor");
 const asyncHandler = require("express-async-handler");
 const ObjectID = require("mongodb").ObjectId;
+const convertStringToRegexp = require("../utils/helper");
 
 const getSchedules = asyncHandler(async (req, res) => {
   let nameSpecialty;
@@ -72,14 +73,22 @@ const getSchedules = asyncHandler(async (req, res) => {
         path: "specialtyID",
         model: "Specialty",
         match: nameSpecialty
-          ? { name: { $regex: nameSpecialty, $options: "i" } }
+          ? {
+              name: {
+                $regex: convertStringToRegexp(nameSpecialty.trim()),
+              },
+            }
           : {},
       },
       {
         path: "clinicID",
         model: "Clinic",
         match: nameClinic
-          ? { name: { $regex: nameClinic, $options: "i" } }
+          ? {
+              name: {
+                $regex: convertStringToRegexp(nameClinic.trim()),
+              },
+            }
           : {},
         select: {
           specialtyID: 0,

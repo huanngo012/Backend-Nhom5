@@ -1,4 +1,5 @@
 const mongoose = require("mongoose"); // Erase if already required
+const { MongooseFindByReference } = require("mongoose-find-by-reference");
 
 // Declare the Schema of the Mongo model
 var doctorSchema = new mongoose.Schema(
@@ -41,6 +42,8 @@ var doctorSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+doctorSchema.plugin(MongooseFindByReference);
 
 //Export the model
 module.exports = mongoose.model("Doctor", doctorSchema);

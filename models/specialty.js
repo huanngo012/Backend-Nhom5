@@ -1,4 +1,5 @@
 const mongoose = require("mongoose"); // Erase if already required
+const convertStringToRegexp = require("../utils/helper");
 
 // Declare the Schema of the Mongo model
 var specialtySchema = new mongoose.Schema(

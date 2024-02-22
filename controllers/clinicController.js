@@ -1,10 +1,8 @@
 const moment = require("moment");
 const Clinic = require("../models/clinic");
-const Specialty = require("../models/specialty");
 const User = require("../models/user");
 const asyncHandler = require("express-async-handler");
 const cloudinary = require("../config/cloudinary.config");
-const ObjectID = require("mongodb").ObjectId;
 
 const getAllClinics = asyncHandler(async (req, res) => {
   const queries = { ...req.query };
@@ -21,35 +19,34 @@ const getAllClinics = asyncHandler(async (req, res) => {
       delete formatedQueries[key];
     }
   });
-  if (queries?.name && queries?.name.trim() !== "") {
-    formatedQueries.name = { $regex: queries.name, $options: "i" };
+
+  if (queries.name) {
+    formatedQueries.name = {
+      $regex: convertStringToRegexp(queries.name.trim()),
+    };
   }
-  if (queries?.host) {
+  if (queries.host) {
     formatedQueries.host = new ObjectID(queries.host);
   }
   if (queries["address.province"]) {
     formatedQueries["address.province"] = {
-      $regex: queries["address.province"],
-      $options: "i",
+      $regex: convertStringToRegexp(queries["address.province"].trim()),
     };
   }
   if (queries["address.district"]) {
     formatedQueries["address.district"] = {
-      $regex: queries["address.district"],
-      $options: "i",
+      $regex: convertStringToRegexp(queries["address.district"].trim()),
     };
   }
   if (queries["address.ward"]) {
     formatedQueries["address.ward"] = {
-      $regex: queries["address.ward"],
-      $options: "i",
+      $regex: convertStringToRegexp(queries["address.ward"].trim()),
     };
   }
 
   let queryCommand = Clinic.find(formatedQueries)
     .populate("specialtyID")
     .populate({ path: "host", select: "fullName email" });
-
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
     queryCommand = queryCommand.sort(sortBy);
@@ -66,7 +63,7 @@ const getAllClinics = asyncHandler(async (req, res) => {
   queryCommand.skip(skip).limit(limit);
 
   const response = await queryCommand.select("-ratings").exec();
-  const counts = await Clinic.find(formatedQueries).countDocuments();
+  const counts = response?.length;
   return res.status(200).json({
     success: response.length > 0 ? true : false,
     data: response,
