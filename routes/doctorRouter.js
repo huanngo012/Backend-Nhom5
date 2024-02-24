@@ -12,6 +12,7 @@ router.get("/host", [verifyAccessToken, isHost], ctrls.getAllDoctorsByHost);
 router.get("/count", ctrls.getCountDoctor);
 router.get("/:id", ctrls.getDoctor);
 router.put("/rating", [verifyAccessToken], ctrls.ratingsDoctor);
+router.delete("/rating/:id", [verifyAccessToken], ctrls.deleteRatingDoctor);
 router.post(
   "/",
   [verifyAccessToken, isAdminOrHost, checkPermissionDoctor],

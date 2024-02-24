@@ -80,17 +80,14 @@ const verifyEmail = asyncHandler(async (req, res) => {
     emailTokenExpires: { $gt: Date.now() },
   });
   if (!user) {
-    throw new Error("Email xác thực hết hạn");
+    return res.redirect(`${process.env.HOST_URL}/login?state=failed`);
   } else {
     user.emailToken = undefined;
     user.emailTokenExpires = undefined;
     user.isVerified = true;
     await user.save();
 
-    return res.status(200).json({
-      success: user ? true : false,
-      message: user ? "Xác thực thành công" : "Xác thực thất bại",
-    });
+    return res.redirect(`${process.env.HOST_URL}/login?state=success`);
   }
 });
 
@@ -130,6 +127,7 @@ const login = asyncHandler(async (req, res) => {
       success: true,
       accessToken,
       data: {
+        _id: response._id,
         fullName: response.fullName,
         email: response.email,
         avatar: response.avatar,
@@ -291,9 +289,7 @@ const updateUser = asyncHandler(async (req, res) => {
   }).select("-password -role -isBlocked -refreshToken");
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Cập nhật thông tin người dùng thành công"
-      : "Cập nhật thông tin người dùng thất bại",
+    data: response ? response : "Cập nhật thông tin người dùng thất bại",
   });
 });
 
@@ -390,8 +386,8 @@ const getUsers = asyncHandler(async (req, res) => {
   });
 });
 const addUserByAdmin = asyncHandler(async (req, res) => {
-  const { fullName, email, password, mobile, avatar } = req.body;
-  if (!email || !password || !fullName || !mobile)
+  const { fullName, email, password, avatar } = req.body;
+  if (!email || !password || !fullName)
     return res.status(400).json({
       success: false,
       message: "Vui lòng nhập đầy đủ",

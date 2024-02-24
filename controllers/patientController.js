@@ -20,9 +20,7 @@ const addPatient = asyncHandler(async (req, res) => {
   const response = await Patient.create({ ...req.body, bookedBy: _id });
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Thêm hồ sơ bệnh nhân thành công"
-      : "Thêm hồ sơ bệnh nhân thất bại",
+    data: response ? response : "Thêm hồ sơ bệnh nhân thất bại",
   });
 });
 const updatePatient = asyncHandler(async (req, res) => {
@@ -42,9 +40,7 @@ const updatePatient = asyncHandler(async (req, res) => {
   });
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Cập nhật hồ sơ bệnh nhân thành công"
-      : "Cập nhật hồ sơ bệnh nhân thất bại",
+    data: response ? response : "Cập nhật hồ sơ bệnh nhân thất bại",
   });
 });
 
@@ -56,9 +52,7 @@ const deletePatient = asyncHandler(async (req, res) => {
   const response = await Patient.findByIdAndDelete(id);
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? `Xóa hồ sơ bệnh nhân thành công`
-      : "Xóa hồ sơ bệnh nhân thất bại",
+    data: response ? response : "Xóa hồ sơ bệnh nhân thất bại",
   });
 });
 

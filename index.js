@@ -39,6 +39,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
@@ -51,8 +52,6 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(swaggerDoc, { customCssUrl: CSS_URL })
 );
-
-//image
 
 //routes
 initRoutes(app);

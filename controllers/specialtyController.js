@@ -39,10 +39,10 @@ const getAllSpecialtys = asyncHandler(async (req, res) => {
   queryCommand.skip(skip).limit(limit);
 
   const response = await queryCommand.exec();
-  const counts = await Specialty.find(formatedQueries).countDocuments();
+  const counts = await Specialty.find().countDocuments();
   return res.status(200).json({
     success: response.length > 0 ? true : false,
-    data: response.length > 0 ? response : "Lấy danh sách chuyên khoa thất bại",
+    data: response,
     counts,
   });
 });
@@ -73,21 +73,12 @@ const getCountSpecialty = asyncHandler(async (req, res) => {
 });
 
 const addSpecialty = asyncHandler(async (req, res) => {
-  const { name, image } = req.body;
+  const { name } = req.body;
   if (!name) throw new Error("Vui lòng nhập đầy đủ");
-  if (image) {
-    const { url } = await cloudinary.uploader.upload(image, {
-      folder: "booking",
-    });
-
-    req.body.image = url;
-  }
   const response = await Specialty.create(req.body);
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Thêm chuyên khoa thành công"
-      : "Thêm chuyên khoa thất bại",
+    data: response ? response : "Thêm chuyên khoa thất bại",
   });
 });
 
@@ -95,31 +86,27 @@ const updateSpecialty = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (Object.keys(req.body).length === 0)
     throw new Error("Vui lòng nhập đầy đủ");
-  const { image } = req.body;
-  if (image) {
-    const { url } = await cloudinary.uploader.upload(image, {
-      folder: "booking",
-    });
-    req.body.image = url;
-  }
+
   const response = await Specialty.findByIdAndUpdate(id, req.body, {
     new: true,
   });
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Cập nhật thông tin chuyên khoa thành công"
-      : "Cập nhật thông tin chuyên khoa thất bại",
+    data: response ? response : "Cập nhật thông tin chuyên khoa thất bại",
   });
 });
 const deleteSpecialty = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const response = await Specialty.findByIdAndDelete(id);
+  if (response?.image) {
+    const urlImage = response?.image.split("/");
+    const img = urlImage[urlImage.length - 1];
+    const imgName = img.split(".")[0];
+    await cloudinary.uploader.destroy(`booking/${imgName}`);
+  }
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? `Xóa chuyên khoa thành công`
-      : "Xóa chuyên khoa thất bại",
+    data: response ? response : "Xóa chuyên khoa thất bại",
   });
 });
 

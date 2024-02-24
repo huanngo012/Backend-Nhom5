@@ -20,7 +20,6 @@ var patientSchema = new mongoose.Schema(
       required: true,
     },
     bookedBy: { type: mongoose.Types.ObjectId, ref: "User" },
-    bookingID: [{ type: mongoose.Types.ObjectId, ref: "Booking" }],
   },
   {
     timestamps: true,

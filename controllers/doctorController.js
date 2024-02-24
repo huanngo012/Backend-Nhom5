@@ -67,7 +67,7 @@ const getAllDoctors = asyncHandler(async (req, res) => {
 
   const response = await queryCommand.select("-ratings").exec();
 
-  const counts = response?.length;
+  const counts = await Clinic.find().countDocuments();
   // Get Days
   let currentDate = moment();
   let startDate = currentDate.clone().startOf("isoweek");
@@ -414,6 +414,26 @@ const ratingsDoctor = asyncHandler(async (req, res) => {
   });
 });
 
+const deleteRatingDoctor = asyncHandler(async (req, res) => {
+  const { _id } = req.user;
+  const { id } = req.params;
+
+  const doctor = await Doctor.findById(id);
+  doctor.ratings = doctor?.ratings?.filter(
+    (el) => el.postedBy.toString() !== _id
+  );
+
+  const ratingCount = doctor.ratings.length;
+  const sum = doctor.ratings.reduce((sum, el) => sum + +el.star, 0);
+
+  doctor.totalRatings = Math.round((sum * 10) / ratingCount) / 10;
+  await doctor.save();
+  return res.status(200).json({
+    success: true,
+    message: `Xóa đánh giá thành công`,
+  });
+});
+
 module.exports = {
   getAllDoctors,
   getDoctor,
@@ -421,6 +441,7 @@ module.exports = {
   deleteDoctor,
   updateDoctor,
   addDoctor,
-  ratingsDoctor,
   getAllDoctorsByHost,
+  ratingsDoctor,
+  deleteRatingDoctor,
 };
