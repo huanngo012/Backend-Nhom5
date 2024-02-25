@@ -6,7 +6,6 @@ const Specialty = require("../models/specialty");
 const Schedule = require("../models/schedule");
 const asyncHandler = require("express-async-handler");
 const ObjectID = require("mongodb").ObjectId;
-const cloudinary = require("../config/cloudinary.config");
 const convertStringToRegexp = require("../utils/helper");
 
 const getAllDoctors = asyncHandler(async (req, res) => {
@@ -19,6 +18,11 @@ const getAllDoctors = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
+  Object.keys(formatedQueries).forEach((key) => {
+    if (!formatedQueries[key]) {
+      delete formatedQueries[key];
+    }
+  });
 
   //Tìm theo tên chuyên khoa
   if (queries?.nameSpecialty) {
@@ -67,29 +71,31 @@ const getAllDoctors = asyncHandler(async (req, res) => {
 
   const response = await queryCommand.select("-ratings").exec();
 
-  const counts = await Clinic.find().countDocuments();
+  const counts = (await Doctor.find(formatedQueries)).length;
+  console.log(counts);
   // Get Days
   let currentDate = moment();
-  let startDate = currentDate.clone().startOf("isoweek");
-  let endDate = currentDate.clone().endOf("isoweek");
+  let startDate = currentDate.clone().startOf("isoweek").toDate();
+  let endDate = currentDate.clone().endOf("isoweek").toDate();
   const newResponse = [];
 
   for (const doctor of response) {
     const schedules = await Schedule.find({
-      doctorID: doctor?._id,
+      doctorID: doctor?._id?._id,
       date: { $gte: startDate, $lte: endDate },
     });
+    if (schedules) {
+      const days = schedules.map((schedule) => {
+        const day = schedule.date.getDay();
+        return day;
+      });
 
-    const days = schedules.map((schedule) => {
-      const day = schedule.date.getDay();
-      return day;
-    });
-
-    const { _doc } = doctor;
-    newResponse.push({
-      ..._doc,
-      ...{ schedules: days },
-    });
+      const { _doc } = doctor;
+      newResponse.push({
+        ..._doc,
+        ...{ schedules: days },
+      });
+    }
   }
 
   return res.status(200).json({
@@ -274,7 +280,8 @@ const getAllDoctorsByHost = asyncHandler(async (req, res) => {
 });
 
 const addDoctor = asyncHandler(async (req, res) => {
-  const { id, clinicID, specialtyID, description, roomID, position } = req.body;
+  const { id, gender, clinicID, specialtyID, description, roomID, position } =
+    req.body;
 
   const user = await User.findById(id);
   const alreadyDotor = await Doctor.findById(id);
@@ -283,7 +290,7 @@ const addDoctor = asyncHandler(async (req, res) => {
       "Người dùng này không có quyền bác sĩ hoặc đã tồn tại thông tin bác sĩ này. Không thể thêm mới!!!"
     );
 
-  if (!description || !roomID || !specialtyID || !clinicID)
+  if (!roomID || !specialtyID || !clinicID || !gender)
     return res.status(400).json({
       success: false,
       message: "Vui lòng nhập đầy đủ",
@@ -297,22 +304,16 @@ const addDoctor = asyncHandler(async (req, res) => {
     if (!specialty) throw new Error("Bệnh viện không tồn tại chuyên khoa này");
     const response = await Doctor.create({
       _id: id,
-      specialtyID,
-      position,
-      clinicID,
-      description,
-      roomID,
+      ...req.body,
     });
     return res.status(200).json({
       success: response ? true : false,
-      message: response
-        ? "Thêm thông tin bác sĩ thành công"
-        : "Thêm thông tin bác sĩ thất bại",
+      data: response ? response : "Thêm thông tin bác sĩ thất bại",
     });
   }
   return res.status(200).json({
     success: false,
-    mesage: "Bệnh viện hoặc Chuyên khoa không tồn tại",
+    data: "Bệnh viện hoặc Chuyên khoa không tồn tại",
   });
 });
 const updateDoctor = asyncHandler(async (req, res) => {
@@ -341,22 +342,17 @@ const updateDoctor = asyncHandler(async (req, res) => {
   }
 
   if (avatar) {
-    const { url } = await cloudinary.uploader.upload(avatar, {
-      folder: "booking",
+    await User.findByIdAndUpdate(id, {
+      avatar: avatar,
     });
-    req.body.avatar = url;
   }
-  await User.findByIdAndUpdate(id, {
-    avatar: req.body.avatar,
-  });
+
   const response = await Doctor.findByIdAndUpdate(id, req.body, {
     new: true,
   });
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Cập nhật thông tin bác sĩ thành công"
-      : "Cập nhật thông tin bác sĩ thất bại",
+    data: response ? response : "Cập nhật thông tin bác sĩ thất bại",
   });
 });
 const deleteDoctor = asyncHandler(async (req, res) => {
@@ -364,7 +360,7 @@ const deleteDoctor = asyncHandler(async (req, res) => {
   const response = await Doctor.findByIdAndDelete(id);
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? `Xóa thành công` : "Xóa thất bại",
+    data: response ? response : "Xóa thất bại",
   });
 });
 

@@ -22,15 +22,9 @@ const register = asyncHandler(async (req, res) => {
   const user = await User.findOne({
     email,
   });
-  if (user && user?.isVerified) {
-    throw new Error("Tài khoản đã tồn tại");
-  } else if (user && user?.emailTokenExpires > Date.now()) {
+  if (user && user?.emailTokenExpires > Date.now()) {
     throw new Error("Vui lòng xác thực email");
   } else {
-    if (user) {
-      const salt = bcryptjs.genSaltSync(10);
-      req.body.password = await bcryptjs.hash(req.body.password, salt);
-    }
     const newUser = user
       ? await User.findByIdAndUpdate(user._id, req.body, { new: true })
       : await User.create(req.body);
@@ -100,7 +94,7 @@ const login = asyncHandler(async (req, res) => {
     });
   const response = await User.findOne({ email, isVerified: true });
   if (!response) throw new Error("Email không tồn tại");
-
+  console.log(response);
   if (response && (await response.isCorrectPassword(password))) {
     const accessToken = generateAccessToken(
       response._id,
@@ -392,51 +386,30 @@ const addUserByAdmin = asyncHandler(async (req, res) => {
       success: false,
       message: "Vui lòng nhập đầy đủ",
     });
-  const user = await User.findOne({ email });
-  if (user) {
-    throw new Error("Tài khoản đã tồn tại");
-  } else {
-    if (avatar) {
-      const { url } = await cloudinary.uploader.upload(avatar, {
-        folder: "booking",
-      });
-      req.body.avatar = url;
-    }
-    const newUser = await User.create(req.body);
-    return res.status(200).json({
-      success: newUser ? true : false,
-      message: newUser
-        ? "Thêm người dùng thành công"
-        : "Thêm người dùng thất bại",
-    });
-  }
+  const newUser = await User.create(req.body);
+  const newUserObject = newUser.toObject();
+  delete newUserObject.password;
+  return res.status(200).json({
+    success: newUserObject ? true : false,
+    data: newUserObject ? newUserObject : "Thêm người dùng thất bại",
+  });
 });
 const updateUserByAdmin = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (Object.keys(req.body).length === 0)
     throw new Error("Vui lòng nhập đầy đủ");
-  const { password, avatar, role } = req.body;
-  if (password) {
-    const salt = bcryptjs.genSaltSync(10);
-    req.body.password = await bcryptjs.hash(password, salt);
-  }
-  if (avatar) {
-    const { url } = await cloudinary.uploader.upload(avatar, {
-      folder: "booking",
-    });
-    req.body.avatar = url;
-  }
+  const { role } = req.body;
+
   if (role && (await User.find({ _id: id, role: 3 }))) {
     await Doctor.findByIdAndDelete(id);
   }
+
   const response = await User.findByIdAndUpdate(id, req.body, {
     new: true,
   }).select("-password");
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Cập nhật thông tin người dùng thành công"
-      : "Cập nhật thông tin người dùng thất bại",
+    data: response ? response : "Cập nhật thông tin người dùng thất bại",
   });
 });
 const deleteUser = asyncHandler(async (req, res) => {
@@ -447,11 +420,15 @@ const deleteUser = asyncHandler(async (req, res) => {
     await Doctor.findByIdAndDelete(id);
   }
   const response = await User.findByIdAndDelete(id);
+  if (response?.avatar) {
+    const urlImage = response?.avatar.split("/");
+    const img = urlImage[urlImage.length - 1];
+    const imgName = img.split(".")[0];
+    await cloudinary.uploader.destroy(`booking/${imgName}`);
+  }
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? `Đã xóa người dùng "${response.email}" thành công`
-      : "Xóa người dùng thất bại",
+    data: response ? response : "Xóa người dùng thất bại",
   });
 });
 

@@ -8,6 +8,10 @@ var doctorSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: "User",
     },
+    gender: {
+      type: String,
+      enum: ["MALE", "FEMALE"],
+    },
     specialtyID: {
       type: mongoose.Types.ObjectId,
       ref: "Specialty",
