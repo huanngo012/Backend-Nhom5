@@ -338,9 +338,7 @@ const addSchedule = asyncHandler(async (req, res) => {
     });
     return res.status(200).json({
       success: response ? true : false,
-      message: response
-        ? "Thêm lịch khám thành công"
-        : "Thêm lịch khám thất bại",
+      data: response ? response : "Thêm lịch khám thất bại",
     });
   }
 });
@@ -376,9 +374,7 @@ const updateSchedule = asyncHandler(async (req, res) => {
   });
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? "Cập nhật lịch khám bệnh thành công"
-      : "Cập nhật lịch khám bệnh thất bại",
+    data: response ? response : "Cập nhật lịch khám bệnh thất bại",
   });
 });
 const deleteSchedule = asyncHandler(async (req, res) => {
@@ -387,9 +383,7 @@ const deleteSchedule = asyncHandler(async (req, res) => {
   await Booking.deleteMany({ scheduleID: id });
   return res.status(200).json({
     success: response ? true : false,
-    message: response
-      ? `Xóa lịch khám bệnh của bác sĩ thành công`
-      : "Xóa lịch khám bệnh của bác sĩ thất bại",
+    data: response ? response : "Xóa lịch khám bệnh của bác sĩ thất bại",
   });
 });
 

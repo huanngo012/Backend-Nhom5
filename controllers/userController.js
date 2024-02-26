@@ -94,7 +94,7 @@ const login = asyncHandler(async (req, res) => {
     });
   const response = await User.findOne({ email, isVerified: true });
   if (!response) throw new Error("Email không tồn tại");
-  console.log(response);
+
   if (response && (await response.isCorrectPassword(password))) {
     const accessToken = generateAccessToken(
       response._id,

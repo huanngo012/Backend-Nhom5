@@ -72,7 +72,7 @@ const getAllDoctors = asyncHandler(async (req, res) => {
   const response = await queryCommand.select("-ratings").exec();
 
   const counts = (await Doctor.find(formatedQueries)).length;
-  console.log(counts);
+
   // Get Days
   let currentDate = moment();
   let startDate = currentDate.clone().startOf("isoweek").toDate();
