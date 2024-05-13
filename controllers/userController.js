@@ -160,6 +160,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   if (!cookie && !cookie.refreshToken)
     throw new Error("Không tìm thấy Refresh token trên cookies");
   // Check token có hợp lệ hay không
+
   const rs = await jwt.verify(cookie.refreshToken, process.env.JWT_SECRET);
   const response = await User.findOne({
     _id: rs._id,

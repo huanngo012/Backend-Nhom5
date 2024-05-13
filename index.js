@@ -26,6 +26,7 @@ const allowedOrigins = [
   "192.168.1.67:3000", // Client URL MOBILE
   process.env.ADMIN_URL, // Admin URL
   process.env.HOST_URL,
+  "http://localhost:3001",
 ];
 app.use(
   cors({

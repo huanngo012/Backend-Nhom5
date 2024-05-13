@@ -18,10 +18,45 @@ const getCategory = asyncHandler(async (req, res) => {
   });
 });
 const getCategories = asyncHandler(async (req, res) => {
-  const response = await Category.find();
+  const queries = { ...req.query };
+  const exludeFields = ["limit", "sort", "page", "fields"];
+  exludeFields.forEach((el) => delete queries[el]);
+  let queryString = JSON.stringify(queries);
+  queryString = queryString.replace(
+    /\b(gte|gt|lt|lte)\b/g,
+    (macthedEl) => `$${macthedEl}`
+  );
+  const formatedQueries = JSON.parse(queryString);
+
+  if (queries.tag) {
+    formatedQueries.tag = {
+      $regex: convertStringToRegexp(queries.tag.trim()),
+    };
+  }
+
+  let queryCommand = Category.find(formatedQueries);
+
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(",").join(" ");
+    queryCommand = queryCommand.sort(sortBy);
+  }
+
+  if (req.query.fields) {
+    const fields = req.query.fields.split(",").join(" ");
+    queryCommand = queryCommand.select(fields);
+  }
+
+  const page = +req.query.page || 1;
+  const limit = +req.query.limit || process.env.LIMIT;
+  const skip = (page - 1) * limit;
+  queryCommand.skip(skip).limit(limit);
+
+  const response = await queryCommand.exec();
+  const counts = await Category.find(formatedQueries).countDocuments();
   return res.status(200).json({
-    success: response ? true : false,
-    data: response ? response : "Lấy dữ liệu các danh mục bệnh viện thất bại",
+    success: response.length > 0 ? true : false,
+    data: response,
+    counts,
   });
 });
 const updateCategory = asyncHandler(async (req, res) => {

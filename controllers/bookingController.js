@@ -6,6 +6,7 @@ const asyncHandler = require("express-async-handler");
 const ObjectID = require("mongodb").ObjectId;
 const cloudinary = require("../config/cloudinary.config");
 const sendMail = require("../utils/sendMail");
+const Clinic = require("../models/clinic");
 
 const getBookings = asyncHandler(async (req, res) => {
   const { _id, role } = req.user;
@@ -91,8 +92,9 @@ const getBookings = asyncHandler(async (req, res) => {
 const addBookingByPatient = asyncHandler(async (req, res) => {
   const { _id, role, email } = req.user;
   if (role === 4) {
-    const { patientID, scheduleID, time, descriptionImg } = req.body;
-    if (!scheduleID || !time) throw new Error("Vui lòng nhập đầy đủ");
+    const { patientID, scheduleID, time, descriptionImg, clinicID } = req.body;
+    if (!scheduleID || !time || !clinicID)
+      throw new Error("Vui lòng nhập đầy đủ");
     const patient = await Patient.findOne({
       _id: patientID,
       bookedBy: _id,
@@ -145,11 +147,13 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
       time,
       descriptionImg: urls,
     });
-    // if (!patient.bookingID) {
-    //   patient.bookingID = [];
-    // }
-    patient.bookingID.push(response._id);
-    await patient.save();
+    const alreadyClinic = patient.clinicArr.includes(clinicID);
+    if (!alreadyClinic) {
+      const updatePatient = patient.clinicArr.concat(clinicID);
+
+      patient.clinicArr = updatePatient;
+      await patient.save();
+    }
     const bookings = await Booking.find({
       scheduleID,
       time,
@@ -259,63 +263,101 @@ const updatePayment = asyncHandler(async (req, res) => {
 
 //ADMIN
 const addBooking = asyncHandler(async (req, res) => {
-  const { scheduleID, time, patientID, descriptionImg } = req.body;
-  if (!scheduleID || !time || !patientID)
-    throw new Error("Vui lòng nhập đầy đủ");
-  const alreadyUser = await User.findById(patientID);
-  if (!alreadyUser) {
-    throw new Error("Người dùng không tồn tại");
-  }
-  const alreadySchedule = await Schedule.findById(scheduleID);
-  if (!alreadySchedule) {
-    throw new Error("Lịch khám bệnh không tồn tại");
-  }
-  const alreadyTime = alreadySchedule.timeType.find(
-    (el) => el.time === time && el.full !== true
-  );
-  if (!alreadyTime) {
-    throw new Error(
-      "Thời gian khám bệnh trong ngày không tồn tại hoặc đã kín lịch"
-    );
-  }
-  let urls = [];
-  if (descriptionImg) {
-    for (const image of descriptionImg) {
-      const { url } = await cloudinary.uploader.upload(image, {
-        folder: "booking",
-      });
-      urls.push(url);
+  const { role } = req.user;
+
+  if (role === 2) {
+    const { patientID, scheduleID, time, descriptionImg, bookedBy, clinicID } =
+      req.body;
+    if (!scheduleID || !time || !bookedBy || !clinicID)
+      throw new Error("Vui lòng nhập đầy đủ");
+    const patient = await Patient.findOne({
+      _id: patientID,
+      bookedBy: bookedBy,
+    });
+    if (!patient) {
+      throw new Error("Hồ sơ bệnh nhân không tồn tại");
     }
-  }
-  const response = await Booking.create({
-    patientID,
-    scheduleID,
-    time,
-    descriptionImg: urls,
-  });
-  const bookings = await Booking.find({
-    scheduleID,
-    time,
-    status: { $ne: "cancelled" },
-  });
-  if (bookings.length === alreadyTime.maxNumber) {
-    await Schedule.updateOne(
-      {
-        _id: scheduleID,
-        timeType: { $elemMatch: alreadyTime },
-      },
-      {
-        $set: {
-          "timeType.$.full": true,
-        },
-      },
-      { new: true }
+    const alreadySchedule = await Schedule.findById(scheduleID);
+    if (!alreadySchedule) {
+      throw new Error("Lịch khám bệnh không tồn tại");
+    }
+    const alreadyTime = alreadySchedule.timeType.find(
+      (el) => el.time === time && el.full !== true
     );
+    if (!alreadyTime) {
+      throw new Error(
+        "Thời gian khám bệnh trong ngày không tồn tại hoặc đã kín lịch"
+      );
+    }
+    const alreadyBooking = await Booking.find({
+      patientID: patient?._id,
+      time,
+    }).populate({
+      path: "scheduleID",
+      select: "date",
+    });
+    if (alreadyBooking.length > 0) {
+      alreadyBooking?.forEach((el) => {
+        if (
+          new Date(+alreadySchedule.date).getTime() ===
+          new Date(+el?.scheduleID?.date).getTime()
+        ) {
+          throw new Error("Bạn đã đặt lịch khám thời gian này rồi");
+        }
+      });
+    }
+    let urls = [];
+    if (descriptionImg) {
+      for (const image of descriptionImg) {
+        const { url } = await cloudinary.uploader.upload(image, {
+          folder: "booking",
+        });
+        urls.push(url);
+      }
+    }
+
+    const response = await Booking.create({
+      patientID,
+      scheduleID,
+      time,
+      descriptionImg: urls,
+    });
+    const alreadyClinic = patient.clinicArr.includes(clinicID);
+    if (!alreadyClinic) {
+      const updatePatient = patient.clinicArr.concat(clinicID);
+
+      patient.clinicArr = updatePatient;
+      await patient.save();
+    }
+    const bookings = await Booking.find({
+      scheduleID,
+      time,
+      status: { $ne: "cancelled" },
+    });
+    if (bookings.length === alreadyTime.maxNumber) {
+      await Schedule.updateOne(
+        {
+          _id: scheduleID,
+          timeType: { $elemMatch: alreadyTime },
+        },
+        {
+          $set: {
+            "timeType.$.full": true,
+          },
+        },
+        { new: true }
+      );
+    }
+    return res.status(200).json({
+      success: response ? true : false,
+      message: response ? "Đặt lịch thành công" : "Đặt lịch thất bại",
+    });
+  } else {
+    return res.status(401).json({
+      success: false,
+      message: "Không có quyền truy cập",
+    });
   }
-  return res.status(200).json({
-    success: response ? true : false,
-    message: response ? "Đặt lịch thành công" : "Đặt lịch thất bại",
-  });
 });
 const updateBooking = asyncHandler(async (req, res) => {
   const { id } = req.params;

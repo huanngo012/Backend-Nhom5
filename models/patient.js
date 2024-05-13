@@ -20,6 +20,7 @@ var patientSchema = new mongoose.Schema(
       required: true,
     },
     bookedBy: { type: mongoose.Types.ObjectId, ref: "User" },
+    clinicArr: [{ type: mongoose.Types.ObjectId, ref: "Clinic" }],
   },
   {
     timestamps: true,

@@ -23,6 +23,11 @@ const getAllDoctors = asyncHandler(async (req, res) => {
       delete formatedQueries[key];
     }
   });
+  //Tìm theo ID Host
+  if (queries.host) {
+    formatedQueries["clinicID.host"] = new ObjectID(queries.host);
+    delete formatedQueries?.host;
+  }
 
   //Tìm theo tên chuyên khoa
   if (queries?.nameSpecialty) {
@@ -52,7 +57,10 @@ const getAllDoctors = asyncHandler(async (req, res) => {
       path: "_id",
     })
     .populate("specialtyID")
-    .populate({ path: "clinicID", select: "name address logo" });
+    .populate({
+      path: "clinicID",
+      select: "name address logo",
+    });
 
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
@@ -142,146 +150,17 @@ const getCountDoctor = asyncHandler(async (req, res) => {
   });
 });
 
-const getAllDoctorsByHost = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
-  let users = [];
-  let fullNameQueries;
-  let nameSpecialty;
-  let nameClinic;
-  const queries = { ...req.query };
-  const exludeFields = ["limit", "sort", "page", "fields"];
-  exludeFields.forEach((el) => delete queries[el]);
-  let queryString = JSON.stringify(queries);
-  queryString = queryString.replace(
-    /\b(gte|gt|lt|lte)\b/g,
-    (macthedEl) => `$${macthedEl}`
-  );
-  const formatedQueries = JSON.parse(queryString);
-  if (queries?.specialtyID) {
-    formatedQueries.specialtyID = new ObjectID(queries.specialtyID);
-  }
-
-  //Tìm theo tên bác sĩ
-  if (queries?.fullName) {
-    users = await User.find({
-      fullName: { $regex: queries.fullName, $options: "i" },
-      role: 3,
-    });
-    users?.forEach((item, index, array) => {
-      array[index] = {
-        _id: new ObjectID(item._id),
-      };
-    });
-    if (users?.length < 1) {
-      throw new Error("Không tìm thấy bác sĩ!!!");
-    }
-    fullNameQueries = { $or: users };
-  }
-  delete formatedQueries?.fullName;
-
-  if (queries?.nameSpecialty) {
-    nameSpecialty = queries?.nameSpecialty;
-    delete formatedQueries?.nameSpecialty;
-  }
-
-  if (queries?.nameClinic) {
-    nameClinic = queries?.nameClinic;
-    delete formatedQueries?.nameClinic;
-  }
-
-  q = {
-    ...formatedQueries,
-    ...fullNameQueries,
-  };
-  let queryCommand = Doctor.find(q).populate({
-    path: "_id",
-  });
-
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(",").join(" ");
-    queryCommand = queryCommand.sort(sortBy);
-  }
-
-  if (req.query.fields) {
-    const fields = req.query.fields.split(",").join(" ");
-    queryCommand = queryCommand.select(fields);
-  }
-
-  const page = +req.query.page || 1;
-  const limit = +req.query.limit || process.env.LIMIT;
-  const skip = (page - 1) * limit;
-  queryCommand.skip(skip).limit(limit);
-
-  const response = await queryCommand
-    .select("-ratings")
-    .populate({
-      path: "specialtyID",
-      select: "name description image",
-      match: nameSpecialty
-        ? { name: { $regex: nameSpecialty, $options: "i" } }
-        : {},
-    })
-    .populate({
-      path: "clinicID",
-      select: "name address description image host",
-      match: nameClinic
-        ? {
-            name: { $regex: nameClinic, $options: "i" },
-            host: new ObjectID(_id),
-          }
-        : {
-            host: new ObjectID(_id),
-          },
-    })
-    .exec();
-  const doctors = await Doctor.find(formatedQueries).populate({
-    path: "clinicID",
-    match: {
-      host: new ObjectID(_id),
-    },
-  });
-  let counts = doctors.filter(
-    (el) =>
-      el?.doctorID?.specialtyID !== null && el?.doctorID?.clinicID !== null
-  ).length;
-  let newResponse1 = response.filter(
-    (el) => el?.specialtyID !== null && el?.clinicID !== null
-  );
-
-  //Get Days
-  let currentDate = moment();
-  let startDate = currentDate.clone().startOf("isoweek");
-  let endDate = currentDate.clone().endOf("isoweek");
-  const newResponse = [];
-
-  for (const doctor of newResponse1) {
-    const schedules = await Schedule.find({
-      doctorID: doctor?._id,
-      date: { $gte: startDate, $lte: endDate },
-    });
-
-    const days = schedules.map((schedule) => {
-      const day = schedule.date.getDay();
-      return day;
-    });
-
-    const { _doc } = doctor;
-    newResponse.push({
-      ..._doc,
-      ...{ schedules: days },
-    });
-  }
-
-  return res.status(200).json({
-    success: newResponse ? true : false,
-    data: newResponse ? newResponse : "Lấy danh sách bác sĩ không thành công",
-    counts,
-  });
-});
-
 const addDoctor = asyncHandler(async (req, res) => {
-  const { id, gender, clinicID, specialtyID, description, roomID, position } =
-    req.body;
+  const {
+    id,
+    gender,
+    clinicID,
+    specialtyID,
+    description,
+    roomID,
+    position,
+    avatar,
+  } = req.body;
 
   const user = await User.findById(id);
   const alreadyDotor = await Doctor.findById(id);
@@ -306,6 +185,9 @@ const addDoctor = asyncHandler(async (req, res) => {
       _id: id,
       ...req.body,
     });
+    if (response && avatar) {
+      await User.findByIdAndUpdate(id, { avatar });
+    }
     return res.status(200).json({
       success: response ? true : false,
       data: response ? response : "Thêm thông tin bác sĩ thất bại",
@@ -341,15 +223,12 @@ const updateDoctor = asyncHandler(async (req, res) => {
     }
   }
 
-  if (avatar) {
-    await User.findByIdAndUpdate(id, {
-      avatar: avatar,
-    });
-  }
-
   const response = await Doctor.findByIdAndUpdate(id, req.body, {
     new: true,
   });
+  if (response && avatar) {
+    await User.findByIdAndUpdate(id, { avatar });
+  }
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Cập nhật thông tin bác sĩ thất bại",
@@ -437,7 +316,6 @@ module.exports = {
   deleteDoctor,
   updateDoctor,
   addDoctor,
-  getAllDoctorsByHost,
   ratingsDoctor,
   deleteRatingDoctor,
 };

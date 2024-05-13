@@ -3,6 +3,7 @@ const Clinic = require("../models/clinic");
 const asyncHandler = require("express-async-handler");
 const cloudinary = require("../config/cloudinary.config");
 const convertStringToRegexp = require("../utils/helper");
+const ObjectID = require("mongodb").ObjectId;
 
 const getAllClinics = asyncHandler(async (req, res) => {
   const queries = { ...req.query };
