@@ -21,7 +21,6 @@ const getSchedules = asyncHandler(async (req, res) => {
   if (queries?.doctorID) {
     formatedQueries.doctorID = new ObjectID(queries.doctorID);
   }
-
   if (queries?.nameSpecialty) {
     nameSpecialty = queries?.nameSpecialty;
     delete formatedQueries?.nameSpecialty;
@@ -34,10 +33,14 @@ const getSchedules = asyncHandler(async (req, res) => {
 
   if (queries?.startDate && queries?.endDate) {
     const start = new Date(+queries?.startDate);
+    start.setHours(7, 0, 0, 0);
+    start.setDate(start.getDate());
     const end = new Date(+queries?.endDate);
+    end.setHours(7, 0, 0, 0);
+    end.setDate(end.getDate());
     formatedQueries.date = {
-      $gte: start,
-      $lte: end,
+      $gte: new Date(start),
+      $lte: new Date(end),
     };
     delete formatedQueries?.startDate;
     delete formatedQueries?.endDate;

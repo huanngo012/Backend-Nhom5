@@ -11,6 +11,7 @@ const bcryptjs = require("bcryptjs");
 const cloudinary = require("../config/cloudinary.config");
 const sendMail = require("../utils/sendMail");
 const crypto = require("crypto");
+const convertStringToRegexp = require("../utils/helper");
 
 const register = asyncHandler(async (req, res) => {
   const { email, password, fullName } = req.body;
@@ -304,10 +305,9 @@ const getCountPatient = asyncHandler(async (req, res) => {
     .month(moment().month())
     .set("date", 1)
     .format("YYYY-MM-DD HH:mm:ss");
-  const totalCount = await User.find({ role: 4 }).countDocuments();
+  const totalCount = await User.find().countDocuments();
   const totalNewUser = await User.find({
     createdAt: { $gte: new Date(previousMonth) },
-    role: 4,
   }).countDocuments();
   return res.status(200).json({
     success: totalCount ? true : false,
@@ -326,8 +326,21 @@ const getUsers = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
+  Object.keys(formatedQueries).forEach((key) => {
+    if (!formatedQueries[key]) {
+      delete formatedQueries[key];
+    }
+  });
+
   if (queries?.fullName) {
-    formatedQueries.fullName = { $regex: queries.fullName, $options: "i" };
+    formatedQueries.fullName = {
+      $regex: convertStringToRegexp(queries.fullName.trim()),
+    };
+  }
+  if (queries?.email) {
+    formatedQueries.email = {
+      $regex: convertStringToRegexp(queries.email.trim()),
+    };
   }
   if (queries?.role) {
     formatedQueries.role = queries.role;

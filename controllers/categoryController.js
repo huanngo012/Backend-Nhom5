@@ -1,5 +1,7 @@
 const Category = require("../models/category");
 const asyncHandler = require("express-async-handler");
+const moment = require("moment");
+const convertStringToRegexp = require("../utils/helper");
 
 const createCategory = asyncHandler(async (req, res) => {
   if (!req.body.tag) throw new Error("Vui lòng nhập đầy đủ");
@@ -9,6 +11,23 @@ const createCategory = asyncHandler(async (req, res) => {
     data: response ? response : "Tạo danh mục bệnh viện mới thất bại",
   });
 });
+
+const getCountCateogry = asyncHandler(async (req, res) => {
+  const previousMonth = moment()
+    .month(moment().month())
+    .set("date", 1)
+    .format("YYYY-MM-DD HH:mm:ss");
+
+  const totalCount = await Category.find().countDocuments();
+  const totalNewCategory = await Category.find({
+    createdAt: { $gte: new Date(previousMonth) },
+  }).countDocuments();
+  return res.status(200).json({
+    success: totalCount ? true : false,
+    data: [totalNewCategory, totalCount],
+  });
+});
+
 const getCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const response = await Category.findById(id);
@@ -27,6 +46,12 @@ const getCategories = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
+
+  Object.keys(formatedQueries).forEach((key) => {
+    if (!formatedQueries[key]) {
+      delete formatedQueries[key];
+    }
+  });
 
   if (queries.tag) {
     formatedQueries.tag = {
@@ -86,4 +111,5 @@ module.exports = {
   getCategory,
   updateCategory,
   deleteCategory,
+  getCountCateogry,
 };

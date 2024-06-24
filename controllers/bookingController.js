@@ -23,6 +23,13 @@ const getBookings = asyncHandler(async (req, res) => {
   if (queries?.status) {
     formatedQueries.status = { $regex: queries.status, $options: "i" };
   }
+  if (queries?.scheduleID) {
+    formatedQueries.scheduleID = new ObjectID(queries.scheduleID);
+  }
+  if (queries?.time) {
+    formatedQueries.time = queries.time;
+  }
+
   if (role === 4) {
     if (queries?.patientID) {
       formatedQueries.patientID = new ObjectID(queries.patientID);

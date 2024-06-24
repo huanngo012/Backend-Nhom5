@@ -4,9 +4,22 @@ const asyncHandler = require("express-async-handler");
 const ObjectID = require("mongodb").ObjectId;
 
 const createRecord = asyncHandler(async (req, res) => {
-  const { bookingID, specialtyID, clinicID, description, medicineArr } =
-    req.body;
-  if (!bookingID || !specialtyID || !clinicID || !description || !medicineArr) {
+  const {
+    bookingID,
+    specialtyID,
+    clinicID,
+    description,
+    medicineArr,
+    totalPrice,
+  } = req.body;
+  if (
+    !bookingID ||
+    !specialtyID ||
+    !clinicID ||
+    !description ||
+    !medicineArr ||
+    !totalPrice
+  ) {
     throw new Error("Vui lòng nhập đầy đủ");
   }
   const response = await Record.create(req.body);
@@ -20,7 +33,7 @@ const createRecord = asyncHandler(async (req, res) => {
     ));
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Thêm thuốc thất bại",
+    data: response ? response : "Thêm kết quả khám bệnh thất bại",
   });
 });
 const getRecord = asyncHandler(async (req, res) => {
@@ -28,7 +41,7 @@ const getRecord = asyncHandler(async (req, res) => {
   const response = await Record.findById(id);
   return res.status(200).json({
     success: response ? true : false,
-    data: response ? response : "Lấy dữ liệu thuốc thất bại",
+    data: response ? response : "Lấy kết quả khám bệnh thất bại",
   });
 });
 const getRecords = asyncHandler(async (req, res) => {
@@ -47,6 +60,10 @@ const getRecords = asyncHandler(async (req, res) => {
     }
   });
   //Tìm theo ID Host
+  if (queries.patientID) {
+    formatedQueries["bookingID.patientID"] = new ObjectID(queries.patientID);
+    delete formatedQueries?.patientID;
+  }
   if (queries.host) {
     formatedQueries["clinicID.host"] = new ObjectID(queries.host);
     delete formatedQueries?.host;
@@ -70,6 +87,9 @@ const getRecords = asyncHandler(async (req, res) => {
     .populate({
       path: "clinicID",
       select: "name address logo",
+    })
+    .populate({
+      path: "medicineArr.medicineID",
     })
     .populate({
       path: "bookingID",

@@ -46,6 +46,11 @@ var scheduleSchema = new mongoose.Schema(
         },
       },
     ],
+
+    isRemote: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

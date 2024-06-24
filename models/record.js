@@ -37,7 +37,7 @@ var recordSchema = new mongoose.Schema(
         quantity: {
           type: Number,
         },
-        totalPrice: {
+        price: {
           type: Number,
         },
         isPaid: {
@@ -46,6 +46,10 @@ var recordSchema = new mongoose.Schema(
         },
       },
     ],
+    totalPrice: {
+      type: Number,
+      required: true,
+    },
   },
   {
     timestamps: true,
