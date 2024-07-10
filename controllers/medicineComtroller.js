@@ -41,7 +41,7 @@ const getMedicines = asyncHandler(async (req, res) => {
     formatedQueries["clinicID.host"] = new ObjectID(queries.host);
     delete formatedQueries?.host;
   }
-  //Tìm theo ID Host
+  //Tìm theo ID Specialty
   if (queries.specialtyID) {
     formatedQueries.specialtyID = new ObjectID(queries.specialtyID);
   }

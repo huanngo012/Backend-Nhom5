@@ -7,6 +7,9 @@ const ObjectID = require("mongodb").ObjectId;
 const cloudinary = require("../config/cloudinary.config");
 const sendMail = require("../utils/sendMail");
 const Clinic = require("../models/clinic");
+const axios = require("axios");
+const moment = require("moment");
+const CryptoJS = require("crypto-js");
 
 const getBookings = asyncHandler(async (req, res) => {
   const { _id, role } = req.user;
@@ -42,7 +45,7 @@ const getBookings = asyncHandler(async (req, res) => {
     }
   }
 
-  const queryCommand = Booking.find(formatedQueries)
+  let queryCommand = Booking.find(formatedQueries)
     .populate({
       path: "scheduleID",
       populate: {
@@ -69,8 +72,9 @@ const getBookings = asyncHandler(async (req, res) => {
       },
     })
     .populate("patientID");
+
   if (req.query.sort) {
-    const sortBy = req.query.sort.split(",").join(" ");
+    let sortBy = req.query.sort.split(",").join(" ");
     queryCommand = queryCommand.sort(sortBy);
   }
 
@@ -100,8 +104,7 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
   const { _id, role, email } = req.user;
   if (role === 4) {
     const { patientID, scheduleID, time, descriptionImg, clinicID } = req.body;
-    if (!scheduleID || !time || !clinicID)
-      throw new Error("Vui lòng nhập đầy đủ");
+    if (!scheduleID || !time) throw new Error("Vui lòng nhập đầy đủ");
     const patient = await Patient.findOne({
       _id: patientID,
       bookedBy: _id,
@@ -423,6 +426,91 @@ const deleteImageBooking = asyncHandler(async (req, res) => {
   });
 });
 
+const config = {
+  app_id: "2554",
+  key1: "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
+  key2: "trMrHtvjo6myautxDUiAcYsVtaeQ8nhf",
+  endpoint: "https://sb-openapi.zalopay.vn/v2/create",
+};
+
+const paymentBooking = asyncHandler(async (req, res) => {
+  const embed_data = {
+    redirecturl: "https://docs.zalopay.vn/result",
+  };
+
+  const items = [{}];
+  const transID = Math.floor(Math.random() * 1000000);
+  const order = {
+    app_id: config.app_id,
+    app_trans_id: `${moment().format("YYMMDD")}_${transID}`, // translation missing: vi.docs.shared.sample_code.comments.app_trans_id
+    app_user: "user123",
+    app_time: Date.now(), // miliseconds
+    item: JSON.stringify(items),
+    embed_data: JSON.stringify(embed_data),
+    amount: 5,
+    description: `Lazada - Payment for the order #${transID}`,
+    bank_code: "zalopayapp",
+    callback_url:
+      "https://da11-2402-800-639c-962e-2df7-fbbd-656-4be0.ngrok-free.app/booking/callback-payment",
+  };
+
+  // appid|app_trans_id|appuser|amount|apptime|embeddata|item
+  const data =
+    config.app_id +
+    "|" +
+    order.app_trans_id +
+    "|" +
+    order.app_user +
+    "|" +
+    order.amount +
+    "|" +
+    order.app_time +
+    "|" +
+    order.embed_data +
+    "|" +
+    order.item;
+  order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
+
+  const result = await axios.post(config.endpoint, null, { params: order });
+  return res.status(200).json(result.data);
+});
+
+const callbackPayment = asyncHandler(async (req, res) => {
+  let result = {};
+  console.log("huan");
+  try {
+    let dataStr = req.body.data;
+    let reqMac = req.body.mac;
+
+    let mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString();
+    console.log("mac =", mac);
+
+    // kiểm tra callback hợp lệ (đến từ ZaloPay server)
+    if (reqMac !== mac) {
+      // callback không hợp lệ
+      result.return_code = -1;
+      result.return_message = "mac not equal";
+    } else {
+      // thanh toán thành công
+      // merchant cập nhật trạng thái cho đơn hàng
+      let dataJson = JSON.parse(dataStr, config.key2);
+      console.log(
+        "update order's status = success where app_trans_id =",
+        dataJson["app_trans_id"]
+      );
+
+      result.return_code = 1;
+      result.return_message = "success";
+    }
+  } catch (ex) {
+    result.return_code = 0; // ZaloPay server sẽ callback lại (tối đa 3 lần)
+    result.return_message = ex.message;
+  }
+
+  // thông báo kết quả cho ZaloPay server
+  res.json(result);
+});
+
 module.exports = {
   getBookings,
   addBookingByPatient,
@@ -432,4 +520,6 @@ module.exports = {
   addBooking,
   deleteImageBooking,
   updatePayment,
+  paymentBooking,
+  callbackPayment,
 };

@@ -29,6 +29,10 @@ const getAllClinics = asyncHandler(async (req, res) => {
   if (queries.host) {
     formatedQueries.host = new ObjectID(queries.host);
   }
+
+  if (queries.categoryID) {
+    formatedQueries.categoryID = new ObjectID(queries.categoryID);
+  }
   if (queries["address.province"]) {
     formatedQueries["address.province"] = {
       $regex: convertStringToRegexp(queries["address.province"].trim()),

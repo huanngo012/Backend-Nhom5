@@ -13,6 +13,8 @@ router.put("/patient/payment/:id", verifyAccessToken, ctrls.updatePayment);
 router.post("/", verifyAccessToken, ctrls.addBooking);
 router.put("/delete-img/:id", verifyAccessToken, ctrls.deleteImageBooking);
 router.post("/", verifyAccessToken, checkPermissionBooking, ctrls.addBooking);
+router.post("/payment", ctrls.paymentBooking);
+router.post("/callback-payment", ctrls.callbackPayment);
 router.put(
   "/:id",
   verifyAccessToken,
