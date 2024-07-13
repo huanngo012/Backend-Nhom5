@@ -46,10 +46,10 @@ const getSchedules = asyncHandler(async (req, res) => {
 
   if (queries?.startDate && queries?.endDate) {
     const start = new Date(+queries?.startDate);
-    start.setHours(7, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
     start.setDate(start.getDate());
     const end = new Date(+queries?.endDate);
-    end.setHours(7, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
     end.setDate(end.getDate());
     formatedQueries.date = {
       $gte: new Date(start),
@@ -60,7 +60,7 @@ const getSchedules = asyncHandler(async (req, res) => {
   }
   if (queries?.date) {
     const newDate = new Date(+queries.date);
-    newDate.setHours(7, 0, 0, 0);
+    newDate.setHours(0, 0, 0, 0);
     newDate.setDate(newDate.getDate());
     formatedQueries.date = new Date(newDate);
   }
