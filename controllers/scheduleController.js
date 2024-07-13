@@ -143,7 +143,8 @@ const getSchedules = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: newResponse.length > 0 ? true : false,
-    data: formatedQueries.date,
+    da: formatedQueries,
+    data: newResponse,
     counts,
   });
 });
