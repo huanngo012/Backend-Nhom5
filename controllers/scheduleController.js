@@ -64,6 +64,7 @@ const getSchedules = asyncHandler(async (req, res) => {
     newDate.setDate(newDate.getDate());
     formatedQueries.date = new Date(newDate);
   }
+
   if (queries?.timeType) {
     const timeArr = queries?.timeType.split(",");
     timeArr?.forEach((item, index, array) => {
@@ -142,7 +143,7 @@ const getSchedules = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: newResponse.length > 0 ? true : false,
-    data: newResponse,
+    data: formatedQueries.date,
     counts,
   });
 });
