@@ -47,6 +47,7 @@ const createRecord = asyncHandler(async (req, res) => {
 const getRecord = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { bookingID } = req.body;
+  console.log(bookingID);
   const response = await Record.findOne({ _id: id, bookingID })
     .populate("specialtyID")
     .populate({
@@ -90,7 +91,6 @@ const getRecords = asyncHandler(async (req, res) => {
   //Tìm theo ID Booking
   if (queries.bookingID) {
     formatedQueries.bookingID = new ObjectID(queries.bookingID);
-    delete formatedQueries?.bookingID;
   }
   if (queries.host) {
     formatedQueries["clinicID.host"] = new ObjectID(queries.host);
