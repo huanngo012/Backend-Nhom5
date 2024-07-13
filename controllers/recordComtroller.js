@@ -1,5 +1,6 @@
 const Record = require("../models/record");
 const Booking = require("../models/booking");
+const Medicine = require("../models/medicine");
 const asyncHandler = require("express-async-handler");
 const ObjectID = require("mongodb").ObjectId;
 
@@ -22,6 +23,7 @@ const createRecord = asyncHandler(async (req, res) => {
   ) {
     throw new Error("Vui lòng nhập đầy đủ");
   }
+
   const response = await Record.create(req.body);
   response &&
     (await Booking.findByIdAndUpdate(
@@ -31,6 +33,12 @@ const createRecord = asyncHandler(async (req, res) => {
         new: true,
       }
     ));
+  response &&
+    medicineArr.map(async (el) => {
+      const medicine = await Medicine.findById(el?.medicineID);
+      medicine.quantity = medicine.quantity - el?.quantity;
+      await medicine.save();
+    });
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Thêm kết quả khám bệnh thất bại",
@@ -74,7 +82,7 @@ const getRecords = asyncHandler(async (req, res) => {
       delete formatedQueries[key];
     }
   });
-  //Tìm theo ID Host
+  //Tìm theo ID Patient
   if (queries.patientID) {
     formatedQueries["bookingID.patientID"] = new ObjectID(queries.patientID);
     delete formatedQueries?.patientID;

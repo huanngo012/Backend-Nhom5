@@ -400,7 +400,7 @@ const addUserByAdmin = asyncHandler(async (req, res) => {
       success: false,
       message: "Vui lòng nhập đầy đủ",
     });
-  const newUser = await User.create(req.body);
+  const newUser = await User.create({ ...req.body, isVerified: true });
   const newUserObject = newUser.toObject();
   delete newUserObject.password;
   return res.status(200).json({

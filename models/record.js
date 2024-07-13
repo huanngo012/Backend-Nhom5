@@ -29,9 +29,9 @@ var recordSchema = new mongoose.Schema(
         },
         dosage: [
           {
+            index: false,
             type: String,
             enum: ["m", "a", "e"],
-            unique: true,
           },
         ],
         quantity: {

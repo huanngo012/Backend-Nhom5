@@ -1,5 +1,6 @@
 const Patient = require("../models/patient");
 const asyncHandler = require("express-async-handler");
+const convertStringToRegexp = require("../utils/helper");
 
 const getPatients = asyncHandler(async (req, res) => {
   const { _id, role } = req.user;
@@ -28,6 +29,11 @@ const getPatients = asyncHandler(async (req, res) => {
     if (queries.clinicID) {
       formatedQueries.clinicArr = queries.clinicID;
       delete formatedQueries?.clinicID;
+    }
+    if (queries?.fullName) {
+      formatedQueries.fullName = {
+        $regex: convertStringToRegexp(queries.fullName.trim()),
+      };
     }
 
     let queryCommand = Patient.find(formatedQueries)

@@ -6,11 +6,11 @@ const {
   isHost,
 } = require("../middlewares/verifyToken");
 
-router.post("/", [verifyAccessToken, isHost], ctrls.createRecord);
+router.post("/", [verifyAccessToken], ctrls.createRecord);
 router.get("/", ctrls.getRecords);
 
-router.put("/:id", [verifyAccessToken, isHost], ctrls.updateRecord);
-router.delete("/:id", [verifyAccessToken, isHost], ctrls.deleteRecord);
+router.put("/:id", [verifyAccessToken], ctrls.updateRecord);
+router.delete("/:id", [verifyAccessToken], ctrls.deleteRecord);
 router.get("/:id", ctrls.getRecord);
 
 module.exports = router;

@@ -29,6 +29,9 @@ const getAllClinics = asyncHandler(async (req, res) => {
   if (queries.host) {
     formatedQueries.host = new ObjectID(queries.host);
   }
+  if (queries._id) {
+    formatedQueries._id = new ObjectID(queries._id);
+  }
 
   if (queries.categoryID) {
     formatedQueries.categoryID = new ObjectID(queries.categoryID);
