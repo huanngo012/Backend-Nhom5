@@ -1,4 +1,5 @@
 const mongoose = require("mongoose"); // Erase if already required
+const { MongooseFindByReference } = require("mongoose-find-by-reference");
 
 // Declare the Schema of the Mongo model
 var bookingSchema = new mongoose.Schema(
@@ -29,9 +30,6 @@ var bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    result: {
-      type: String,
-    },
     qr_code: {
       type: String,
     },
@@ -44,6 +42,8 @@ var bookingSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+bookingSchema.plugin(MongooseFindByReference);
 
 //Export the model
 module.exports = mongoose.model("Booking", bookingSchema);

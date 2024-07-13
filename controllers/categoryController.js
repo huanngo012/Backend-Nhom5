@@ -4,7 +4,8 @@ const moment = require("moment");
 const convertStringToRegexp = require("../utils/helper");
 
 const createCategory = asyncHandler(async (req, res) => {
-  if (!req.body.tag) throw new Error("Vui lòng nhập đầy đủ");
+  if (!req.body.tag && req.body.tag === "")
+    throw new Error("Vui lòng nhập đầy đủ");
   const response = await Category.create(req.body);
   return res.status(200).json({
     success: response ? true : false,
@@ -86,7 +87,7 @@ const getCategories = asyncHandler(async (req, res) => {
 });
 const updateCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  if (Object.keys(req.body).length === 0)
+  if (!req.body.tag && req.body.tag === "")
     throw new Error("Vui lòng nhập đầy đủ");
   const response = await Category.findByIdAndUpdate(id, req.body, {
     new: true,

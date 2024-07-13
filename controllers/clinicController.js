@@ -51,6 +51,7 @@ const getAllClinics = asyncHandler(async (req, res) => {
 
   let queryCommand = Clinic.find(formatedQueries)
     .populate("specialtyID")
+    .populate("categoryID")
     .populate({ path: "host", select: "fullName email" });
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
@@ -113,6 +114,9 @@ const addClinic = asyncHandler(async (req, res) => {
   if ((!name || !address || !host, !categoryID))
     throw new Error("Vui lòng nhập đầy đủ");
 
+  const alreadyHost = await Clinic.find({ host: new ObjectID(host) });
+
+  if (alreadyHost.length > 0) throw new Error("Host này đã quản lý cơ sở y tế");
   const response = await Clinic.create(req.body);
   return res.status(200).json({
     success: response ? true : false,

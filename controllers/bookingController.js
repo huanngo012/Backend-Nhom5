@@ -1,15 +1,14 @@
 const Booking = require("../models/booking");
 const Schedule = require("../models/schedule");
-const User = require("../models/user");
 const Patient = require("../models/patient");
 const asyncHandler = require("express-async-handler");
 const ObjectID = require("mongodb").ObjectId;
 const cloudinary = require("../config/cloudinary.config");
 const sendMail = require("../utils/sendMail");
-const Clinic = require("../models/clinic");
 const axios = require("axios");
 const moment = require("moment");
 const CryptoJS = require("crypto-js");
+const convertStringToRegexp = require("../utils/helper");
 
 const getBookings = asyncHandler(async (req, res) => {
   const { _id, role } = req.user;
@@ -23,6 +22,20 @@ const getBookings = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
+
+  Object.keys(formatedQueries).forEach((key) => {
+    if (!formatedQueries[key]) {
+      delete formatedQueries[key];
+    }
+  });
+  //Tìm theo tên bệnh nhân
+  if (queries?.namePatient) {
+    formatedQueries["patientID.fullName"] = {
+      $regex: convertStringToRegexp(queries.namePatient.trim()),
+    };
+    delete formatedQueries?.namePatient;
+  }
+
   if (queries?.status) {
     formatedQueries.status = { $regex: queries.status, $options: "i" };
   }

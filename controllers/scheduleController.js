@@ -17,6 +17,19 @@ const getSchedules = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
+  Object.keys(formatedQueries).forEach((key) => {
+    if (!formatedQueries[key]) {
+      delete formatedQueries[key];
+    }
+  });
+
+  //Tìm theo tên bác sĩ
+  if (queries?.doctorName) {
+    formatedQueries["doctorID._id.fullName"] = {
+      $regex: convertStringToRegexp(queries.doctorName.trim()),
+    };
+    delete formatedQueries?.doctorName;
+  }
 
   if (queries?.doctorID) {
     formatedQueries.doctorID = new ObjectID(queries.doctorID);
@@ -170,6 +183,7 @@ const getSchedulesByHost = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   let nameSpecialty;
   let nameClinic;
+  let nameDoctor;
   const queries = { ...req.query };
   const exludeFields = ["limit", "sort", "page", "fields"];
   exludeFields.forEach((el) => delete queries[el]);
@@ -179,6 +193,11 @@ const getSchedulesByHost = asyncHandler(async (req, res) => {
     (macthedEl) => `$${macthedEl}`
   );
   const formatedQueries = JSON.parse(queryString);
+  Object.keys(formatedQueries).forEach((key) => {
+    if (!formatedQueries[key]) {
+      delete formatedQueries[key];
+    }
+  });
 
   if (queries?.doctorID) {
     formatedQueries.doctorID = new ObjectID(queries.doctorID);
@@ -192,6 +211,11 @@ const getSchedulesByHost = asyncHandler(async (req, res) => {
   if (queries?.nameClinic) {
     nameClinic = queries?.nameClinic;
     delete formatedQueries?.nameClinic;
+  }
+
+  if (queries?.nameDoctor) {
+    nameDoctor = queries?.nameDoctor;
+    delete formatedQueries?.nameDoctor;
   }
 
   if (queries?.startDate && queries?.endDate) {
@@ -228,12 +252,23 @@ const getSchedulesByHost = asyncHandler(async (req, res) => {
         path: "_id",
         model: "User",
         select: { __v: 0, password: 0, createdAt: 0, updatedAt: 0, role: 0 },
+        match: nameDoctor
+          ? {
+              fullName: {
+                $regex: convertStringToRegexp(nameDoctor.trim()),
+              },
+            }
+          : {},
       },
       {
         path: "specialtyID",
         model: "Specialty",
         match: nameSpecialty
-          ? { name: { $regex: nameSpecialty, $options: "i" } }
+          ? {
+              name: {
+                $regex: convertStringToRegexp(nameSpecialty.trim()),
+              },
+            }
           : {},
       },
       {
@@ -241,7 +276,7 @@ const getSchedulesByHost = asyncHandler(async (req, res) => {
         model: "Clinic",
         match: nameClinic
           ? {
-              name: { $regex: nameClinic, $options: "i" },
+              name: { $regex: convertStringToRegexp(nameClinic.trim()) },
               host: new ObjectID(_id),
             }
           : {
@@ -271,36 +306,82 @@ const getSchedulesByHost = asyncHandler(async (req, res) => {
 
   const page = +req.query.page || 1;
   const limit = +req.query.limit || process.env.LIMIT;
-  const skip = (page - 1) * limit;
-  queryCommand.skip(skip).limit(limit);
+  // const skip = (page - 1) * limit;
+  // queryCommand.skip(skip).limit(limit);
 
   let response = await queryCommand.exec();
 
   let newResponse = response.filter(
     (el) =>
-      el?.doctorID?.specialtyID !== null && el?.doctorID?.clinicID !== null
+      el?.doctorID?.specialtyID !== null &&
+      el?.doctorID?.clinicID !== null &&
+      el?.doctorID?._id !== null &&
+      el?.doctorID !== null
   );
+  const newRs = newResponse.slice((page - 1) * limit, page * limit);
 
   const schedules = await Schedule.find(formatedQueries).populate({
     path: "doctorID",
     model: "Doctor",
     populate: [
       {
+        path: "_id",
+        model: "User",
+        select: { __v: 0, password: 0, createdAt: 0, updatedAt: 0, role: 0 },
+        match: nameDoctor
+          ? {
+              fullName: {
+                $regex: convertStringToRegexp(nameDoctor.trim()),
+              },
+            }
+          : {},
+      },
+      {
+        path: "specialtyID",
+        model: "Specialty",
+        match: nameSpecialty
+          ? {
+              name: {
+                $regex: convertStringToRegexp(nameSpecialty.trim()),
+              },
+            }
+          : {},
+      },
+      {
         path: "clinicID",
         model: "Clinic",
-        match: { host: new ObjectID(_id) },
+        match: nameClinic
+          ? {
+              name: { $regex: convertStringToRegexp(nameClinic.trim()) },
+              host: new ObjectID(_id),
+            }
+          : {
+              host: new ObjectID(_id),
+            },
+        select: {
+          specialtyID: 0,
+          address: 0,
+          image: 0,
+          createdAt: 0,
+          updatedAt: 0,
+          __v: 0,
+        },
       },
     ],
   });
-  let counts = schedules.filter(
+
+  counts = schedules.filter(
     (el) =>
-      el?.doctorID?.specialtyID !== null && el?.doctorID?.clinicID !== null
+      el?.doctorID?.specialtyID !== null &&
+      el?.doctorID?.clinicID !== null &&
+      el?.doctorID?._id !== null &&
+      el?.doctorID !== null
   ).length;
   return res.status(200).json({
-    success: newResponse.length > 0 ? true : false,
+    success: newRs.length > 0 ? true : false,
     data:
-      newResponse.length > 0
-        ? newResponse
+      newRs.length > 0
+        ? newRs
         : "Lấy danh sách lịch khám bệnh của các bác sĩ thất bại",
     counts,
   });

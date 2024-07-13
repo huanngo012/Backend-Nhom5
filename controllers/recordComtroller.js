@@ -38,7 +38,8 @@ const createRecord = asyncHandler(async (req, res) => {
 });
 const getRecord = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const response = await Record.findById(id);
+  const { bookingID } = req.body;
+  const response = await Record.findOne({ _id: id, bookingID });
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Lấy kết quả khám bệnh thất bại",
@@ -63,6 +64,11 @@ const getRecords = asyncHandler(async (req, res) => {
   if (queries.patientID) {
     formatedQueries["bookingID.patientID"] = new ObjectID(queries.patientID);
     delete formatedQueries?.patientID;
+  }
+  //Tìm theo ID Booking
+  if (queries.bookingID) {
+    formatedQueries.bookingID = new ObjectID(queries.bookingID);
+    delete formatedQueries?.bookingID;
   }
   if (queries.host) {
     formatedQueries["clinicID.host"] = new ObjectID(queries.host);

@@ -92,6 +92,7 @@ const getAllDoctors = asyncHandler(async (req, res) => {
       doctorID: doctor?._id?._id,
       date: { $gte: startDate, $lte: endDate },
     });
+
     if (schedules) {
       const days = schedules.map((schedule) => {
         const day = schedule.date.getDay();
