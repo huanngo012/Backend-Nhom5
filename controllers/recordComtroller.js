@@ -39,7 +39,21 @@ const createRecord = asyncHandler(async (req, res) => {
 const getRecord = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { bookingID } = req.body;
-  const response = await Record.findOne({ _id: id, bookingID });
+  const response = await Record.findOne({ _id: id, bookingID })
+    .populate("specialtyID")
+    .populate({
+      path: "clinicID",
+      select: "name address logo",
+    })
+    .populate({
+      path: "medicineArr.medicineID",
+    })
+    .populate({
+      path: "bookingID",
+      populate: {
+        path: "scheduleID",
+      },
+    });
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Lấy kết quả khám bệnh thất bại",
