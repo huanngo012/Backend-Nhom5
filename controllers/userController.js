@@ -23,32 +23,28 @@ const register = asyncHandler(async (req, res) => {
   const user = await User.findOne({
     email,
   });
-  if (user && user?.emailTokenExpires > Date.now()) {
-    throw new Error("Vui lòng xác thực email");
-  } else {
-    const newUser = user
-      ? await User.findByIdAndUpdate(
-          user._id,
-          ...req.body,
-          { isVerified: true },
-          { new: true }
-        )
-      : await User.create(...req.body, { isVerified: true });
-    const token = newUser.createEmailToken();
-    await newUser.save();
-    const html = `Xin vui lòng click vào đây để xác thực email <a href=${process.env.URL_SERVER}/api/user/verify-email/${token}> Click here</a>`;
-    const data = {
-      email: email,
-      subject: "Xác thực email",
-      html,
-    };
-    // await sendMail(data);
+  const newUser = user
+    ? await User.findByIdAndUpdate(
+        user._id,
+        ...req.body,
+        { isVerified: true },
+        { new: true }
+      )
+    : await User.create(...req.body, { isVerified: true });
+  const token = newUser.createEmailToken();
+  await newUser.save();
+  const html = `Xin vui lòng click vào đây để xác thực email <a href=${process.env.URL_SERVER}/api/user/verify-email/${token}> Click here</a>`;
+  const data = {
+    email: email,
+    subject: "Xác thực email",
+    html,
+  };
+  // await sendMail(data);
 
-    return res.status(200).json({
-      success: newUser ? true : false,
-      message: newUser ? "Đăng ký thành công." : "Đăng ký thất bại",
-    });
-  }
+  return res.status(200).json({
+    success: newUser ? true : false,
+    message: newUser ? "Đăng ký thành công." : "Đăng ký thất bại",
+  });
 });
 
 const sendMailVerifyEmail = asyncHandler(async (req, res) => {
