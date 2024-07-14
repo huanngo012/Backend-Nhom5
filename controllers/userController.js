@@ -28,7 +28,7 @@ const register = asyncHandler(async (req, res) => {
   } else {
     const newUser = user
       ? await User.findByIdAndUpdate(user._id, req.body, { new: true })
-      : await User.create(req.body);
+      : await User.create(...req.body, { isVerified: true });
     const token = newUser.createEmailToken();
     await newUser.save();
     const html = `Xin vui lòng click vào đây để xác thực email <a href=${process.env.URL_SERVER}/api/user/verify-email/${token}> Click here</a>`;
@@ -37,13 +37,11 @@ const register = asyncHandler(async (req, res) => {
       subject: "Xác thực email",
       html,
     };
-    await sendMail(data);
+    // await sendMail(data);
 
     return res.status(200).json({
       success: newUser ? true : false,
-      message: newUser
-        ? "Đăng ký thành công. Vui lòng xác thực qua email !!!"
-        : "Đăng ký thất bại",
+      message: newUser ? "Đăng ký thành công." : "Đăng ký thất bại",
     });
   }
 });
