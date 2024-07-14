@@ -27,7 +27,12 @@ const register = asyncHandler(async (req, res) => {
     throw new Error("Vui lòng xác thực email");
   } else {
     const newUser = user
-      ? await User.findByIdAndUpdate(user._id, req.body, { new: true })
+      ? await User.findByIdAndUpdate(
+          user._id,
+          ...req.body,
+          { isVerified: true },
+          { new: true }
+        )
       : await User.create(...req.body, { isVerified: true });
     const token = newUser.createEmailToken();
     await newUser.save();
