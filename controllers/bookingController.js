@@ -218,13 +218,13 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
 });
 
 const cancelBookingByPatient = asyncHandler(async (req, res) => {
-  const { _id } = req.user;
   const { id } = req.params;
+  const { patientID } = req.body;
 
   const booking = await Booking.find({
     _id: id,
     status: "pending",
-    patientID: _id,
+    patientID: patientID,
   });
 
   if (booking?.length > 0) {
