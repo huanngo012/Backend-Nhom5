@@ -23,14 +23,16 @@ const register = asyncHandler(async (req, res) => {
   const user = await User.findOne({
     email,
   });
+
   const newUser = user
     ? await User.findByIdAndUpdate(
         user._id,
-        ...req.body,
-        { isVerified: true },
+
+        { ...req.body, isVerified: true },
         { new: true }
       )
-    : await User.create(...req.body, { isVerified: true });
+    : await User.create({ ...req.body, isVerified: true });
+
   const token = newUser.createEmailToken();
   await newUser.save();
   const html = `Xin vui lòng click vào đây để xác thực email <a href=${process.env.URL_SERVER}/api/user/verify-email/${token}> Click here</a>`;
