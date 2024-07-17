@@ -138,8 +138,9 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
       );
     }
     const alreadyBooking = await Booking.find({
-      patientID: _id,
+      patientID: patientID,
       time,
+      scheduleID,
     }).populate({
       path: "scheduleID",
       select: "date",
