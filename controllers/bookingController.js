@@ -116,7 +116,14 @@ const getBookings = asyncHandler(async (req, res) => {
 const addBookingByPatient = asyncHandler(async (req, res) => {
   const { _id, role, email } = req.user;
   if (role === 4) {
-    const { patientID, scheduleID, time, descriptionImg, clinicID } = req.body;
+    const {
+      patientID,
+      scheduleID,
+      time,
+      descriptionImg,
+      clinicID,
+      description,
+    } = req.body;
     if (!scheduleID || !time) throw new Error("Vui lòng nhập đầy đủ");
     const patient = await Patient.findOne({
       _id: patientID,
@@ -170,6 +177,7 @@ const addBookingByPatient = asyncHandler(async (req, res) => {
       scheduleID,
       time,
       descriptionImg: urls,
+      description,
     });
     const alreadyClinic = patient.clinicArr.includes(clinicID);
     if (!alreadyClinic) {
