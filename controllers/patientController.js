@@ -86,17 +86,22 @@ const updatePatient = asyncHandler(async (req, res) => {
     throw new Error("Vui lòng nhập đầy đủ");
   const patient = await Patient.find({ bookedBy: _id });
   if (!patient) throw new Error("Bạn không có quyền chỉnh sửa");
+  const before = req.body.dob;
+
   if (req.body.dob) {
     req.body.dob = new Date(+req.body.dob);
     req.body.dob.setHours(7, 0, 0, 0);
     req.body.dob.setDate(req.body.dob.getDate());
   }
+  const after = req.body.dob;
   const response = await Patient.findByIdAndUpdate(id, req.body, {
     new: true,
   });
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Cập nhật hồ sơ bệnh nhân thất bại",
+    before,
+    after,
   });
 });
 
