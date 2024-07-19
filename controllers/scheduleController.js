@@ -232,7 +232,7 @@ const getSchedulesByHost = asyncHandler(async (req, res) => {
   }
   if (queries?.date) {
     const newDate = new Date(+queries.date);
-    newDate.setHours(7, 0, 0, 0);
+    newDate.setHours(0, 0, 0, 0);
     newDate.setDate(newDate.getDate());
     formatedQueries.date = new Date(newDate);
   }
@@ -399,7 +399,7 @@ const addSchedule = asyncHandler(async (req, res) => {
     throw new Error("Bác sĩ không tồn tại");
   }
   const newDate = new Date(+date);
-  newDate.setHours(7, 0, 0, 0);
+  newDate.setHours(0, 0, 0, 0);
   newDate.setDate(newDate.getDate());
   const isDuplicateTime = timeType.some(
     (item, index, array) =>
@@ -425,6 +425,7 @@ const addSchedule = asyncHandler(async (req, res) => {
     return res.status(200).json({
       success: response ? true : false,
       data: response ? response : "Thêm lịch khám thất bại",
+      date,
     });
   }
 });
@@ -434,7 +435,7 @@ const updateSchedule = asyncHandler(async (req, res) => {
   if (!doctorID) throw new Error("Vui lòng nhập ID bác sĩ");
   if (req.body.date) {
     const newDate = new Date(+req.body.date);
-    newDate.setHours(7, 0, 0, 0);
+    newDate.setHours(0, 0, 0, 0);
     newDate.setDate(newDate.getDate());
     req.body.date = newDate;
   }

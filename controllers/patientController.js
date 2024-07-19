@@ -71,7 +71,7 @@ const addPatient = asyncHandler(async (req, res) => {
   if (!fullName || !phone || !gender || !dob)
     throw new Error("Vui lòng nhập đầy đủ");
   req.body.dob = new Date(+dob);
-  req.body.dob.setHours(7, 0, 0, 0);
+  req.body.dob.setHours(0, 0, 0, 0);
   req.body.dob.setDate(req.body.dob.getDate());
   const response = await Patient.create({ ...req.body, bookedBy: _id });
   return res.status(200).json({
@@ -90,7 +90,7 @@ const updatePatient = asyncHandler(async (req, res) => {
 
   if (req.body.dob) {
     req.body.dob = new Date(+req.body.dob);
-    req.body.dob.setHours(7, 0, 0, 0);
+    req.body.dob.setHours(0, 0, 0, 0);
     req.body.dob.setDate(req.body.dob.getDate());
   }
   const after = req.body.dob;
