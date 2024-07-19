@@ -77,6 +77,7 @@ const addPatient = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: response ? true : false,
     data: response ? response : "Thêm hồ sơ bệnh nhân thất bại",
+    dob: dob,
   });
 });
 const updatePatient = asyncHandler(async (req, res) => {
