@@ -32,7 +32,7 @@ const allowedOrigins = [
 ];
 app.use(
   cors({
-    origin: *,
+    origin: allowedOrigins,
     methods: ["POST", "PUT", "GET", "DELETE"],
     credentials: true,
     cookie: {
