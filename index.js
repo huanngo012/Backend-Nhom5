@@ -28,10 +28,11 @@ const allowedOrigins = [
   process.env.HOST_URL,
   process.env.ADMIN_URL_HOST,
   "http://localhost:3001",
+  "http://localhost:3000",
 ];
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: *,
     methods: ["POST", "PUT", "GET", "DELETE"],
     credentials: true,
     cookie: {
