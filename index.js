@@ -22,12 +22,7 @@ dbConnect();
 const app = express();
 
 const allowedOrigins = [
-  process.env.CLIENT_URL, // Client URL
-  "192.168.1.67:3000", // Client URL MOBILE
-  process.env.ADMIN_URL, // Admin URL
-  process.env.HOST_URL,
-  process.env.ADMIN_URL_HOST,
-  "http://localhost:3001",
+  "https://fe-booking-hospital.vercel.app"
   "http://localhost:3000",
 ];
 app.use(
