@@ -22,7 +22,7 @@ dbConnect();
 const app = express();
 
 const allowedOrigins = [
-  "https://fe-booking-hospital.vercel.app"
+  "https://fe-booking-hospital.vercel.app",
   "http://localhost:3000",
 ];
 app.use(
